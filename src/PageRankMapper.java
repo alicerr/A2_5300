@@ -10,9 +10,19 @@ public class PageRankMapper extends Mapper<IntWritable, Text, IntWritable, Text>
 	public void mapper(IntWritable keyin, Text val, Context context){
 		long pass = context.getCounter(PageRankEnum.PASS).getValue();
 		if (pass == 0){
-			String[] info = val.toString().split("\t");
+			String[] info = val.toString().split(" ");
 			try {
-				context.write(new IntWritable(Integer.parseInt(info[0])), new Text(info[2]));
+				double select = Double.parseDouble(info[0]);
+				IntWritable fromInt = new IntWritable(Integer.parseInt(info[1]));
+				IntWritable toInt = new IntWritable(Integer.parseInt(info[2]));
+				Text toText = new Text(info[2]);
+				Text nullTo = new Text("-1");
+				if (Util.retainEdgeByNodeID(select)){
+					context.write(fromInt, toText);
+				} else {
+					context.write(fromInt, nullTo);
+				}
+				context.write(toInt, nullTo);
 			} catch (NumberFormatException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -26,9 +36,8 @@ public class PageRankMapper extends Mapper<IntWritable, Text, IntWritable, Text>
 			
 		} else {
 			String[] info = val.toString().split("|");
-			Integer from = Integer.parseInt(info[0]);
-			String[] toList = info[1].split(",");
-			Double pr = Double.parseDouble(info[2]);
+			String[] toList = info[0].split(",");
+			Double pr = Double.parseDouble(info[1]);
 			if (toList.length == 0){
 				context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).increment(
 						(long)(pr * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG + .5)
@@ -47,16 +56,17 @@ public class PageRankMapper extends Mapper<IntWritable, Text, IntWritable, Text>
 					}
 							
 				}
-				try {
-					context.write(new IntWritable(from), new Text(info[1] + "|" + Double.toString(pr)));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 			}
+			try {
+				context.write(keyin, new Text(info[0] + "|" + Double.toString(pr)));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 	}
 }
