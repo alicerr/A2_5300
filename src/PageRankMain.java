@@ -13,7 +13,7 @@ public class PageRankMain {
 	public static void main(String[] args) throws Exception {
 	    Configuration conf = new Configuration();
 	    Job job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
-	    //job.setJarByClass(WordCount.class);
+	    job.setJarByClass(PageRankMain.class);
 	    job.setMapperClass(PageRankMapper.class);
 	    job.setReducerClass(PageRankReducer.class);
 	    job.setOutputKeyClass(IntWritable.class);
@@ -52,7 +52,8 @@ public class PageRankMain {
 	    	job = Job.getInstance(conf, "page rank " + args[1] + " pass " + passes.getValue());
 		    job.setMapperClass(PageRankMapper.class);
 		    job.setReducerClass(PageRankReducer.class);
-		    job.setOutputKeyClass(IntWritable.class);
+		    job.setOutputKeyClass(IntWritable.class);	
+		    job.setJarByClass(PageRankMain.class);
 		    job.setOutputValueClass(Text.class);
 		    passes = job.getCounters().findCounter(PageRankEnum.PASS);
 		    passes.setValue(round);
