@@ -11,10 +11,13 @@ public class PageRankReducer extends Reducer<IntWritable, Text, IntWritable, Tex
 		if (pass == 0){
 			String toList = "";
 			for (Text val : vals){
-				toList += "," + val.toString();
+				if (!val.toString().equals("-1"))
+					toList += "," + val.toString();
 			}
 			if (toList.length() > 0){
 				toList = toList.substring(1);
+			} else {
+				toList = "-1";
 			}
 			try {
 				context.write(key, new Text(toList + "|" + CONST.BASE_PAGE_RANK));
