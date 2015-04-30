@@ -1,3 +1,5 @@
+import org.apache.hadoop.io.Text;
+
 
 public abstract class Util {
 
@@ -94,6 +96,23 @@ public abstract class Util {
 		665666,
 		675448,
 		685230};
+
+
+	public static String getBlockDataAsString(StringBuffer nodes,
+			StringBuffer innerEdges, StringBuffer outerEdges) {
+		if (nodes.length() == 0)
+			nodes.append(CONST.L1_DIV);
+		if (innerEdges.length() == 0)
+			innerEdges.append(CONST.L1_DIV);
+		if (outerEdges.length() == 0)
+			outerEdges.append(CONST.L1_DIV);
+		
+		return CONST.ENTIRE_BLOCK_DATA_MARKER + CONST.L0_DIV +
+			   nodes.toString().substring(1) + CONST.L0_DIV +
+			   innerEdges.toString().substring(1) + CONST.L0_DIV +
+			   outerEdges.toString().substring(1);
+		
+	}
 	
 	
 	
