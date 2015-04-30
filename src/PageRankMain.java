@@ -86,5 +86,7 @@ public class PageRankMain {
 	        System.out.println("round: " + round + "\nresidual: " + residualSum.getValue()/(double)(totalNodes.getValue() * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG));
 	        round++;
 	      }
+	    System.exit(0);
 	  }
+	
 }
