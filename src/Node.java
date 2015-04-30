@@ -48,6 +48,7 @@ public class Node {
 	public Text toText(){
 		return new Text(toString());
 	}
+	public int edges(){ return this.edges; }
 	
 	
 }

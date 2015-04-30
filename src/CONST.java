@@ -1,7 +1,7 @@
 
 
 public abstract class CONST {
-	public static final long BASE_PAGE_RANK = 10000;
+	public static final double BASE_PAGE_RANK = .5;
 	public static final double DAMPING_FACTOR = .85;
 	public static final double RANDOM_SURFER = 1 - DAMPING_FACTOR;
 	public static final double SIG_FIG_FOR_DOUBLE_TO_LONG = 100000;
@@ -22,6 +22,7 @@ public abstract class CONST {
 	public static final String L0_DIV = "|",
 							   L1_DIV = ":",
 							   L2_DIV = ",";
+	public static final double RESIDUAL_SUM_DELTA = 0.0001;
 			                
 			                
 			                

@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.apache.hadoop.io.Text;
 
 
@@ -112,6 +115,68 @@ public abstract class Util {
 			   innerEdges.toString().substring(1) + CONST.L0_DIV +
 			   outerEdges.toString().substring(1);
 		
+	}
+	
+	public static double fillMapsFromBlockString(String[] info, 
+			HashMap<Integer, Node> nodes, 
+			HashMap<Integer, ArrayList<Edge>> innerEdges, 
+			HashMap<Integer, ArrayList<Edge>> outerEdges){
+
+		String[] nodesString = info[CONST.NODE_LIST].split(CONST.L1_DIV);
+		
+		String[] outerEdgesString = info[CONST.OUTER_EDGE_LIST].split(CONST.L1_DIV);
+		String[] innerEdgesString = info[CONST.OUTER_EDGE_LIST].split(CONST.L1_DIV);
+
+		for (String nodeString : nodesString){
+			Node node = new Node(nodeString);
+			nodes.put(node.id, node);
+		}
+		for (String edgeString : innerEdgesString){
+			Edge e = new Edge(edgeString, true);
+			nodes.get(e.from).addBranch();
+			if (innerEdges != null){
+				if (innerEdges.containsKey(e.to))
+					innerEdges.get(e.to).add(e);
+				else{
+					ArrayList<Edge> edgesThatGoToNode = new ArrayList<Edge>();
+					edgesThatGoToNode.add(e);
+					innerEdges.put(e.to, edgesThatGoToNode);
+				}
+			}
+		}
+		for (String edgeString : outerEdgesString){
+			Edge e = new Edge(edgeString, false);
+			nodes.get(e.from).addBranch();
+			if (outerEdges != null){
+				if (outerEdges.containsKey(e.to)){
+					outerEdges.get(e.to).add(e);
+				} else {
+					ArrayList<Edge> outerEdgesFromNode = new ArrayList<Edge>();
+					outerEdgesFromNode.add(e);
+					outerEdges.put(e.from, outerEdgesFromNode);
+				}
+			}
+			
+		}
+		double sinks = 0.;
+		for (Node n : nodes.values()){
+			if (n.edges() == 0)
+				sinks += n.getPR();
+		}
+		return sinks;
+	}
+
+	public static String getBlockDataAsString(
+			HashMap<Integer, Node> nodes,
+			String innerEdgesString,
+			String outerEdgesString) {
+		StringBuffer nodesSB = new StringBuffer();
+		for (Node n : nodes.values()){
+			nodesSB.append(CONST.L1_DIV + n.toString());
+		} 
+		if (nodes.size() == 0)
+			nodesSB.append(CONST.L1_DIV);
+		return CONST.ENTIRE_BLOCK_DATA_MARKER + CONST.L0_DIV + nodesSB.toString().substring(1) + CONST.L0_DIV + innerEdgesString + CONST.L0_DIV + outerEdgesString;
 	}
 	
 	

@@ -7,4 +7,10 @@ public class OuterEdgeValue {
 		this.to = to;
 		this.pr = pr;
 	}
+
+	public OuterEdgeValue(String[] info) {
+		this.to = Integer.parseInt(info[1]);
+		this.pr = Double.parseDouble(info[2]);
+		
+	}
 }

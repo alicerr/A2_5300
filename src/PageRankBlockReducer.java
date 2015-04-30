@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -8,71 +10,109 @@ import org.apache.hadoop.mapreduce.Reducer;
 public class PageRankBlockReducer extends
 		Reducer<IntWritable, Text, IntWritable, Text> {
 	public void reduce(IntWritable key, Iterable<Text> vals, Context context){
-		long pass = context.getCounter(PageRankEnum.PASS).getValue();
-		if (pass == 0){
-			String toList = "";
-			StringBuffer nodes = new StringBuffer();
-			StringBuffer innerEdges = new StringBuffer();
-			StringBuffer outerEdges = new StringBuffer();
-			for (Text val : vals){
-				String[] info = val.toString().split(CONST.L0_DIV);
-				byte marker = Byte.parseByte(info[0]);
-				if (marker == CONST.SEEN_NODE_MARKER){
-					nodes.append(CONST.L1_DIV + info[1] + CONST.L2_DIV + CONST.BASE_PAGE_RANK);
-				} else if (marker == CONST.SEEN_EDGE_MARKER){
-					int from = Integer.parseInt(info[1]);
-					int to = Integer.parseInt(info[2]);
-					if (Util.idToBlock(to) == key.get()){
-						innerEdges.append(CONST.L1_DIV + from + CONST.L2_DIV + to);
-					} else {
-						outerEdges.append(CONST.L1_DIV + from + CONST.L2_DIV + to);
-					}
-					
-				}
-				
-			}
-			Util.getBlockDataAsString(nodes, innerEdges, outerEdges);
-			if (nodes.length() == 0)
-				nodes.append(CONST.L1_DIV);
-			if (innerEdges.length() == 0)
-				innerEdges.append(CONST.L1_DIV);
-			if (outerEdges.length() == 0)
-				outerEdges.append(CONST.L1_DIV);
+
+		//information holders for vals
+		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
+		HashMap<Integer, ArrayList<Edge>> innerEdges = new HashMap<Integer, ArrayList<Edge>>();
+		HashMap<Integer, Double> outerEdges = new HashMap<Integer, Double>();
+		double inBlockSink = 0.;
+		String outerEdgesString = "";
+		String innerEdgesString = "";
+		
+		//get values passed into function
+		for (Text val : vals){
+			String[] info = val.toString().split(CONST.L0_DIV);
+			byte marker = Byte.parseByte(info[CONST.MARKER_INDEX_L0]);
 			
-			try {
-				context.write(key, new Text(Util.getBlockDataAsString(nodes, innerEdges, outerEdges)));
-			} catch (IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			context.getCounter(PageRankEnum.TOTAL_NODES).increment(1);
-		} else {
-			double redistributeValue = context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue()/(context.getCounter(PageRankEnum.TOTAL_NODES).getValue() * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG);
-			double newPageRank = CONST.RANDOM_SURFER*CONST.BASE_PAGE_RANK + redistributeValue;
-			double oldPageRank = 0.;
-			String toList = "";
-			for (Text val : vals){
-				if (val.toString().contains("|")){
-					String[] info = val.toString().split("|");
-					toList = info[0];
-					oldPageRank = Double.parseDouble(info[1]);
-				} else {
-					newPageRank += CONST.DAMPING_FACTOR * Double.parseDouble(val.toString());
-				}
+			//block data
+			if (marker == CONST.ENTIRE_BLOCK_DATA_MARKER){
+				inBlockSink = Util.fillMapsFromBlockString(info, nodes, innerEdges, null);
+				outerEdgesString = info[CONST.OUTER_EDGE_LIST];
+				innerEdgesString = info[CONST.INNER_EDGE_LIST];
 				
-			}
-			double residualValue = Math.abs(newPageRank - oldPageRank)/newPageRank;
-			context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long)(residualValue * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG + .5));
-			try {
-				context.write(key, new Text(toList + "|" + newPageRank + "|" + residualValue));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} 
+			//incoming edge data
+			else if (marker == CONST.INCOMING_EDGE_MARKER){
+				OuterEdgeValue incoming = new OuterEdgeValue(info);
+				if (outerEdges.containsKey(incoming.to)){
+					outerEdges.put(incoming.to, outerEdges.get(incoming.to) + incoming.pr);
+				} else {
+					outerEdges.put(incoming.to, incoming.pr);
+				}
 			}
 		}
+		
+		//general variables from counters and constants
+		double outOfBlockSink = CONST.DAMPING_FACTOR*((context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue() + .5)/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG - inBlockSink);
+		double totalNodes = context.getCounter(PageRankEnum.TOTAL_NODES).getValue();
+		double basePageAddition = CONST.RANDOM_SURFER * CONST.BASE_PAGE_RANK + outOfBlockSink/totalNodes;
+		
+		//per round holders
+		HashMap<Integer, Node> nodesLastPass = new HashMap<Integer, Node>();
+		HashMap<Integer, Node> nodesThisPass = new HashMap<Integer, Node>();
+		boolean converged = false;
+		double residualSum = 0.;
+		double newInBlockSink = 0.;
+		
+		//run convergence
+		while (!converged){
+			double baseInBlockPageAddition = CONST.DAMPING_FACTOR * (inBlockSink/totalNodes);
+			for (Node n : nodesLastPass.values()){
+				
+				//base pr
+				double pr = basePageAddition + baseInBlockPageAddition;
+				
+				//incoming pr
+				if (outerEdges.containsKey(n.id))
+					pr += CONST.DAMPING_FACTOR * outerEdges.get(n.id);
+				
+				//in block pr
+				if (innerEdges.containsKey(n.id))
+					for (Edge e : innerEdges.get(n.id))
+						pr += CONST.DAMPING_FACTOR * nodesLastPass.get(e.from).prOnEdge();
+				
+				//residual
+				double residual = (pr - n.getPR())/pr;
+				residualSum += residual;
+				
+				//save value
+				Node nPrime = new Node(n);
+				nPrime.setPR(pr);
+				nodesThisPass.put(nPrime.id, nPrime);
+				
+				//look for sink
+				if (nPrime.edges() == 0)
+					newInBlockSink += pr;
+				
+			}
+			//reset holders
+			nodesLastPass = nodesThisPass;
+			nodesThisPass = new HashMap<Integer, Node>();
+			inBlockSink = newInBlockSink;
+			newInBlockSink = 0;
+			
+			//check for convergence
+			converged = residualSum < CONST.RESIDUAL_SUM_DELTA;
+			residualSum = 0;
+			
+		}
+		
+		//get residual from values passed into reducer
+		double residualSumOuter = 0.;
+		for (Node n : nodesLastPass.values()){
+			double residual = (n.getPR() - nodes.get(key).getPR())/n.getPR();
+			residualSumOuter += residual;
+		}
+		context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long) (residualSumOuter * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG));
+		
+		//save updated block
+		String block = Util.getBlockDataAsString(nodes, innerEdgesString, outerEdgesString);
+		try {
+			context.write(key, new Text(block));
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
+	
 
 }
