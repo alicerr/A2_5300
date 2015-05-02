@@ -1,9 +1,6 @@
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -18,6 +15,7 @@ public class BlockReducerPass0 extends
 		StringBuffer outerEdges = new StringBuffer();
 		HashSet<Integer> seenNodes = new HashSet<Integer>();
 		for (Text val : vals){
+			
 			String[] info = val.toString().split(CONST.L0_DIV, -1);
 			byte marker = Byte.parseByte(info[0]);
 			if (marker == CONST.SEEN_NODE_MARKER){

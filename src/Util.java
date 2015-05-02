@@ -1,8 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.apache.hadoop.io.Text;
-
 
 public abstract class Util {
 

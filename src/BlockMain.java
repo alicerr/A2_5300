@@ -1,18 +1,14 @@
 
-import java.io.FileWriter;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 public class BlockMain {
 	public static void main(String[] args) throws Exception {
 	    Configuration conf = new Configuration();
@@ -35,7 +31,7 @@ public class BlockMain {
         long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
         int round = 1;
         double residualSum = 1;
-        while (residualSum > CONST.DELTA){
+        while (residualSum > CONST.RESIDUAL_SUM_DELTA){
         	String inputFile = outputFile;
         	outputFile = args[1] + " pass " + round;
         	conf = new Configuration();
