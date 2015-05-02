@@ -19,11 +19,9 @@ public class PageRankMain {
 	    String outputFile = args[1] + " pass 0";
 	    
 	    Job job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
-	    
 	    job.setJarByClass(PageRankMain.class);
 	    FileInputFormat.setInputPaths(job, new Path(args[0]));
 	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-	    
 	    job.setMapperClass(PageRankMapperZero.class);
 	    job.setReducerClass(PageRankReducerZero.class);
 	    job.setOutputKeyClass(LongWritable.class);
@@ -40,6 +38,7 @@ public class PageRankMain {
         	conf = new Configuration();
         	conf.setLong("TOTAL_NODES", totalNodes);
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
+
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
      	    
@@ -47,11 +46,12 @@ public class PageRankMain {
      	    job.setReducerClass(PageRankReducer.class);
      	    job.setOutputKeyClass(LongWritable.class);
      	    job.setOutputValueClass(Text.class);
-             
-     	     job.setInputFormatClass(SequenceFileInputFormat.class);
-     	     job.setOutputFormatClass(SequenceFileOutputFormat.class);
+             	
+     	    job.setInputFormatClass(SequenceFileInputFormat.class);
+     	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
              
             job.waitForCompletion(true);
+            round++;
         	
         }
 	    

@@ -54,7 +54,7 @@ public class BlockMain {
              
             job.waitForCompletion(true);
             residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
-        	
+        	round++;
         }
 	    
 
