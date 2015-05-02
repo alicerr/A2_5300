@@ -22,6 +22,9 @@ public class PageRankReducer extends Reducer<LongWritable, Text, LongWritable, T
 			
 		}
 		double residualValue = Math.abs(newPageRank - oldPageRank)/newPageRank;
+		System.out.println("reduce for: " + key);
+		for (Text val : vals)
+			System.out.println(key + " " + val);
 		context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long)(residualValue * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG + .5));
 		try {
 			context.write(key, new Text(toList + "\t" + newPageRank + "\t" + residualValue));
