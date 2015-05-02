@@ -38,6 +38,7 @@ public class PageRankMain {
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
      	    
+     	    job.setJarByClass(PageRankMain.class);
      	    job.setMapperClass(PageRankMapper.class);
      	    job.setReducerClass(PageRankReducer.class);
      	    job.setOutputKeyClass(LongWritable.class);
