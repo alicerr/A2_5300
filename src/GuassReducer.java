@@ -46,6 +46,8 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 		double totalNodes = context.getConfiguration().getLong("TOTAL_NODES", 65230);
 		double basePageAddition = CONST.RANDOM_SURFER * CONST.BASE_PAGE_RANK + outOfBlockSink/totalNodes;
 		double oldInBlockSink = inBlockSink;
+		org.apache.hadoop.mapreduce.Counter innerBlockRounds = context.getCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
+
 		//per round holders
 		HashMap<Integer, Node> nodesLastPass = new HashMap<Integer, Node>();
 		HashMap<Integer, Node> nodesThisPass = new HashMap<Integer, Node>();
@@ -55,7 +57,7 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 		for (Node n : nodes.values()){
 			nodesLastPass.put(n.id, new Node(n));
 		}
-		int round = 0;
+
 		//run convergence
 		while (!converged){
 			double baseInBlockPageAddition = CONST.DAMPING_FACTOR * (inBlockSink/(double)totalNodes);
@@ -100,10 +102,12 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 			converged = residualSum < CONST.RESIDUAL_SUM_DELTA;
 			//System.out.println(key + " " + residualSum);
 			residualSum = 0;
-			round++;
+
+			innerBlockRounds.increment(1);
+			
 			
 		}
-		System.out.println("reducer rounds: " + round);
+		//System.out.println("reducer rounds: " + round);
 		//get residual from values passed into reducer
 		double residualSumOuter = 0.;
 		for (Node n : nodesLastPass.values()){

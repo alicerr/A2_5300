@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapreduce.Reducer;
 
 
@@ -48,7 +49,7 @@ public class PageRankBlockReducer extends
 			double outOfBlockSink = CONST.DAMPING_FACTOR*((context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue() + .5)/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG - inBlockSink);
 			double totalNodes = context.getConfiguration().getLong("TOTAL_NODES", 685230);
 			double basePageAddition = CONST.RANDOM_SURFER * CONST.BASE_PAGE_RANK + outOfBlockSink/totalNodes;
-			
+			org.apache.hadoop.mapreduce.Counter innerBlockRounds = context.getCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
 			//per round holders
 			HashMap<Integer, Node> nodesLastPass = new HashMap<Integer, Node>();
 			HashMap<Integer, Node> nodesThisPass = new HashMap<Integer, Node>();
@@ -89,6 +90,8 @@ public class PageRankBlockReducer extends
 					if (nPrime.edges() == 0)
 						newInBlockSink += pr;
 					
+					
+					
 				}
 				//reset holders
 				nodesLastPass = nodesThisPass;
@@ -100,6 +103,7 @@ public class PageRankBlockReducer extends
 				converged = residualSum < CONST.RESIDUAL_SUM_DELTA;
 				//System.out.println(key + " " + residualSum);
 				residualSum = 0;
+				innerBlockRounds.increment(1);
 				
 			}
 			

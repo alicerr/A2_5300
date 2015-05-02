@@ -45,8 +45,13 @@ public class PageRankMain {
              	
      	    job.setInputFormatClass(SequenceFileInputFormat.class);
      	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
-             
+            
             job.waitForCompletion(true);
+            double residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
+
+            System.out.println("Round: " + round + 
+        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/totalNodes + "\n");
+            
             round++;
         	
         }

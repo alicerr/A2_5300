@@ -18,7 +18,7 @@ public abstract class CONST {
 	public static final String L0_DIV = "U",
 							   L1_DIV = ":",
 							   L2_DIV = ",";
-	public static final double RESIDUAL_SUM_DELTA = 0.01;
+	public static final double RESIDUAL_SUM_DELTA = 0.001;
 			                
 			                
 			                

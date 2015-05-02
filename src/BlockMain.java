@@ -31,6 +31,8 @@ public class BlockMain {
         long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
         int round = 1;
         double residualSum = 1;
+        
+        
         while (residualSum > CONST.RESIDUAL_SUM_DELTA){
         	String inputFile = outputFile;
         	outputFile = args[1] + " pass " + round;
@@ -49,13 +51,15 @@ public class BlockMain {
      	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
              
             job.waitForCompletion(true);
+			org.apache.hadoop.mapreduce.Counter innerBlockRounds = job.getCounters().findCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
+			
             residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
-        	round++;
+        	System.out.println("Round: " + round + 
+        			" \nInner block rounds total: " + innerBlockRounds + " avg " + innerBlockRounds.getValue()/68. +
+        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/totalNodes + "\n");
+            round++;
+        	
         }
-	    
-
-	   
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
         
 	}
 
