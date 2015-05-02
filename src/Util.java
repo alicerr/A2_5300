@@ -26,6 +26,7 @@ public abstract class Util {
 				goodGuess = true;
 			}
 		}
+		//System.out.println(id +  " is in block " + guess + " and between " + blocks[guess] + " and " + blocks[guess] + (id < blocks[guess] && (guess > 0 ? id > blocks[guess - 1] : true)));
 		return guess;
 	}
 	
@@ -122,41 +123,49 @@ public abstract class Util {
 			HashMap<Integer, ArrayList<Edge>> innerEdges, 
 			HashMap<Integer, ArrayList<Edge>> outerEdges){
 
-		String[] nodesString = info[CONST.NODE_LIST].split(CONST.L1_DIV);
-		
-		String[] outerEdgesString = info[CONST.OUTER_EDGE_LIST].split(CONST.L1_DIV);
-		String[] innerEdgesString = info[CONST.OUTER_EDGE_LIST].split(CONST.L1_DIV);
+		String[] nodesString = info[CONST.NODE_LIST].split(CONST.L1_DIV, -1);
+		String[] outerEdgesString = info[CONST.OUTER_EDGE_LIST].split(CONST.L1_DIV, -1);
+		String[] innerEdgesString = info[CONST.INNER_EDGE_LIST].split(CONST.L1_DIV, -1);
+
 
 		for (String nodeString : nodesString){
-			Node node = new Node(nodeString);
-			nodes.put(node.id, node);
+			if (!nodeString.equals("")){
+				Node node = new Node(nodeString);
+				nodes.put(node.id, node);
+			}
 		}
 		for (String edgeString : innerEdgesString){
-			Edge e = new Edge(edgeString, true);
-			nodes.get(e.from).addBranch();
-			if (innerEdges != null){
-				if (innerEdges.containsKey(e.to))
-					innerEdges.get(e.to).add(e);
-				else{
-					ArrayList<Edge> edgesThatGoToNode = new ArrayList<Edge>();
-					edgesThatGoToNode.add(e);
-					innerEdges.put(e.to, edgesThatGoToNode);
+			if (!edgeString.equals("")){
+				Edge e = new Edge(edgeString, true);
+				nodes.get(e.from).addBranch();
+	
+				if (innerEdges != null){
+					if (innerEdges.containsKey(e.to))
+						innerEdges.get(e.to).add(e);
+					else{
+						ArrayList<Edge> edgesThatGoToNode = new ArrayList<Edge>();
+						edgesThatGoToNode.add(e);
+						innerEdges.put(e.to, edgesThatGoToNode);
+					}
 				}
 			}
 		}
 		for (String edgeString : outerEdgesString){
-			Edge e = new Edge(edgeString, false);
-			nodes.get(e.from).addBranch();
-			if (outerEdges != null){
-				if (outerEdges.containsKey(e.to)){
-					outerEdges.get(e.to).add(e);
-				} else {
-					ArrayList<Edge> outerEdgesFromNode = new ArrayList<Edge>();
-					outerEdgesFromNode.add(e);
-					outerEdges.put(e.from, outerEdgesFromNode);
+			if (!edgeString.equals("")){
+				Edge e = new Edge(edgeString, false);
+				nodes.get(e.from).addBranch();
+				
+				if (outerEdges != null){
+					if (outerEdges.containsKey(e.to)){
+						outerEdges.get(e.to).add(e);
+					} else {
+						ArrayList<Edge> outerEdgesFromNode = new ArrayList<Edge>();
+						outerEdgesFromNode.add(e);
+						outerEdges.put(e.from, outerEdgesFromNode);
+					}
 				}
 			}
-			
+				
 		}
 		double sinks = 0.;
 		for (Node n : nodes.values()){

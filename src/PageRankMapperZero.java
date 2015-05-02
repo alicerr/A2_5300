@@ -1,43 +1,36 @@
 import java.io.IOException;
 
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Mapper;
 
-
-public class BlockMapperPass0 extends
-		Mapper<LongWritable, Text, LongWritable, Text> {
+public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable, Text> {
+	
 	
 	public void mapper(LongWritable keyin, Text val, Context context){
-		
 		String[] info = val.toString().split(" ");
 		try {
 			double select = Double.parseDouble(info[0]);
-			int fromInt = Integer.parseInt(info[1]);
-			int toInt = Integer.parseInt(info[2]);
-			int fromBlock = Util.idToBlock(fromInt);
-			int toBlock = Util.idToBlock(toInt);
-			
-			
+			LongWritable fromInt = new LongWritable(Integer.parseInt(info[1]));
+			LongWritable toInt = new LongWritable(Integer.parseInt(info[2]));
+			Text toText = new Text(info[2]);
+			Text nullTo = new Text("-1");
 			if (Util.retainEdgeByNodeID(select)){
 				try {
-					context.write(new LongWritable(fromBlock), new Text(CONST.SEEN_EDGE_MARKER + CONST.L0_DIV + fromInt + CONST.L0_DIV + toInt));
+					context.write(fromInt, toText);
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			} else {
 				try {
-					context.write(new LongWritable(fromBlock), new Text(CONST.SEEN_NODE_MARKER + CONST.L0_DIV + fromInt));
+					context.write(fromInt, nullTo);
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
 			}
 			try {
-				context.write(new LongWritable(toBlock), new Text(CONST.SEEN_NODE_MARKER + CONST.L0_DIV + toInt));
+				context.write(toInt, nullTo);
 			} catch (IOException | InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -46,6 +39,5 @@ public class BlockMapperPass0 extends
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-			
 	}
 }

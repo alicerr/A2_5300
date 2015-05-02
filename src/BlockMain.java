@@ -13,19 +13,19 @@ import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-public class PageRankMain {
+public class BlockMain {
 	public static void main(String[] args) throws Exception {
 	    Configuration conf = new Configuration();
 	    String outputFile = args[1] + " pass 0";
 	    
 	    Job job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
 	    
-	    job.setJarByClass(PageRankMain.class);
+	    job.setJarByClass(BlockMain.class);
 	    FileInputFormat.setInputPaths(job, new Path(args[0]));
 	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
 	    
-	    job.setMapperClass(PageRankMapperZero.class);
-	    job.setReducerClass(PageRankReducerZero.class);
+	    job.setMapperClass(BlockMapperPass0.class);
+	    job.setReducerClass(BlockReducerPass0.class);
 	    job.setOutputKeyClass(LongWritable.class);
 	    job.setOutputValueClass(Text.class);
         
@@ -34,7 +34,8 @@ public class PageRankMain {
         job.waitForCompletion(true);
         long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
         int round = 1;
-        while (round < 6){
+        double residualSum = 1;
+        while (residualSum > CONST.DELTA){
         	String inputFile = outputFile;
         	outputFile = args[1] + " pass " + round;
         	conf = new Configuration();
@@ -43,15 +44,16 @@ public class PageRankMain {
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
      	    
-     	    job.setMapperClass(PageRankMapper.class);
-     	    job.setReducerClass(PageRankReducer.class);
+     	    job.setMapperClass(PageRankBlockMapper.class);
+     	    job.setReducerClass(PageRankBlockReducer.class);
      	    job.setOutputKeyClass(LongWritable.class);
      	    job.setOutputValueClass(Text.class);
              
-     	     job.setInputFormatClass(SequenceFileInputFormat.class);
-     	     job.setOutputFormatClass(SequenceFileOutputFormat.class);
+     	    job.setInputFormatClass(SequenceFileInputFormat.class);
+     	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
              
             job.waitForCompletion(true);
+            residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
         	
         }
 	    

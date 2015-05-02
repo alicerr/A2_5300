@@ -19,10 +19,11 @@ public abstract class CONST {
 			                  EDGE_FROM = 0,
 			                INNER_EDGE_LIST = 2,
 			                OUTER_EDGE_LIST = 3;
-	public static final String L0_DIV = "|",
+	public static final String L0_DIV = "U",
 							   L1_DIV = ":",
 							   L2_DIV = ",";
 	public static final double RESIDUAL_SUM_DELTA = 0.0001;
+	public static final double DELTA = 0.0001;
 			                
 			                
 			                

@@ -3,18 +3,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 
 
 public class PageRankBlockMapper extends
-		Mapper<IntWritable, Text, IntWritable, Text> {
+		Mapper<LongWritable, Text, LongWritable, Text> {
 	
-	public void mapper(IntWritable keyin, Text val, Context context){
+public void mapper(LongWritable keyin, Text val, Context context){
 		
 		//keep block text, we don't need to recreate these
-		String[] info = val.toString().split(CONST.L0_DIV);
+		String[] info = val.toString().split(CONST.L0_DIV, -1);
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		HashMap<Integer, ArrayList<Edge>> outerEdges = new HashMap<Integer, ArrayList<Edge>>();
 
@@ -25,7 +26,7 @@ public class PageRankBlockMapper extends
 		for (ArrayList<Edge> ae : outerEdges.values()){
 			for (Edge e : ae){
 				try {
-					context.write(new IntWritable(Util.idToBlock(e.to)), new Text(CONST.INCOMING_EDGE_MARKER + CONST.L0_DIV + e.to + CONST.L0_DIV + nodes.get(e.from).prOnEdge()));
+					context.write(new LongWritable(Util.idToBlock(e.to)), new Text(CONST.INCOMING_EDGE_MARKER + CONST.L0_DIV + e.to + CONST.L0_DIV + nodes.get(e.from).prOnEdge()));
 				} catch (IOException | InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -34,9 +35,9 @@ public class PageRankBlockMapper extends
 		}
 		try {
 			context.write(keyin, val);
-		} catch (IOException | InterruptedException e1) {
+		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			e.printStackTrace();
 		}
 	
 	}
