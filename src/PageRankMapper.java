@@ -8,7 +8,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class PageRankMapper extends Mapper<LongWritable, Text, LongWritable, Text> {
 
 	public void map(LongWritable keyin, Text val, Context context){
-		String[] info = val.toString().split(CONST.L0_DIV);
+		String[] info = val.toString().split(CONST.L0_DIV, -1);
+
 		String[] toList = info[0].split(",");
 		Double pr = Double.parseDouble(info[1]);
 		if (toList.length == 0 || (toList.length == 1 && toList[0].equals(""))){

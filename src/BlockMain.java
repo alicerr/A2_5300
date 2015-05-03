@@ -41,7 +41,8 @@ public class BlockMain {
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-     	    
+    	    job.setJarByClass(BlockMain.class);
+    	    
      	    job.setMapperClass(PageRankBlockMapper.class);
      	    job.setReducerClass(PageRankBlockReducer.class);
      	    job.setOutputKeyClass(LongWritable.class);
@@ -60,6 +61,7 @@ public class BlockMain {
             round++;
         	
         }
+        System.exit(0);
         
 	}
 

@@ -186,6 +186,11 @@ public abstract class Util {
 		return CONST.ENTIRE_BLOCK_DATA_MARKER + CONST.L0_DIV + nodesSB.toString().substring(1) + CONST.L0_DIV + innerEdgesString + CONST.L0_DIV + outerEdgesString;
 	}
 	
+	public static boolean isInFirstTwoIndex(int blockIndex, long nodeIndex){
+		return nodeIndex == 0 || nodeIndex == 1 ||
+				(blockIndex > 0 && (nodeIndex == blocks[blockIndex - 1] || nodeIndex == blocks[blockIndex - 1] +1));
+	}
+	
 	
 	
 }

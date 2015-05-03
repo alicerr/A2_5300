@@ -6,6 +6,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 public class PageRankMain {
 	public static void main(String[] args) throws Exception {
 	    Configuration conf = new Configuration();
@@ -19,7 +20,7 @@ public class PageRankMain {
 	    job.setReducerClass(PageRankReducerZero.class);
 	    job.setOutputKeyClass(LongWritable.class);
 	    job.setOutputValueClass(Text.class);
-        
+	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
         job.setInputFormatClass(TextInputFormat.class);    
         job.waitForCompletion(true);
         long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
@@ -33,7 +34,8 @@ public class PageRankMain {
 
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-     	    
+     	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
+     	    job.setInputFormatClass(SequenceFileInputFormat.class);
      	    job.setJarByClass(PageRankMain.class);
      	    job.setMapperClass(PageRankMapper.class);
      	    job.setReducerClass(PageRankReducer.class);

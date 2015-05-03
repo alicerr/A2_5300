@@ -13,7 +13,7 @@ public class PageRankReducer extends Reducer<LongWritable, Text, LongWritable, T
 		String toList = "";
 		for (Text val : vals){
 			if (val.toString().contains(CONST.L0_DIV)){
-				String[] info = val.toString().split(CONST.L0_DIV);
+				String[] info = val.toString().split(CONST.L0_DIV, -1);
 				toList = info[0];
 				oldPageRank = Double.parseDouble(info[1]);
 			} else {
