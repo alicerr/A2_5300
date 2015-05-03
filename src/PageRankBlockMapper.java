@@ -10,13 +10,13 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class PageRankBlockMapper extends
 		Mapper<LongWritable, Text, LongWritable, Text> {
 	
-public void mapper(LongWritable keyin, Text val, Context context){
+public void map(LongWritable keyin, Text val, Context context){
 		
 		//keep block text, we don't need to recreate these
 		String[] info = val.toString().split(CONST.L0_DIV, -1);
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		HashMap<Integer, ArrayList<Edge>> outerEdges = new HashMap<Integer, ArrayList<Edge>>();
-
+		System.out.println(keyin + " -> " + val);
 		double sinks = Util.fillMapsFromBlockString(info, nodes, null, outerEdges);
 		
 

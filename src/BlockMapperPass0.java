@@ -8,7 +8,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class BlockMapperPass0 extends
 		Mapper<LongWritable, Text, LongWritable, Text> {
 	
-	public void mapper(LongWritable keyin, Text val, Context context){
+	public void map(LongWritable keyin, Text val, Context context){
 		
 		String[] info = val.toString().split(" ");
 		try {

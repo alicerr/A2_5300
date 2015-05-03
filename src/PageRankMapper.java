@@ -22,16 +22,16 @@ public class PageRankMapper extends Mapper<LongWritable, Text, LongWritable, Tex
 				try {
 					context.write(new LongWritable(toID), new Text(Double.toString(pr/toList.length)));
 				} catch (IOException | InterruptedException e) {
-					// TODO Auto-generated catch block
+					System.out.println("error5");
 					e.printStackTrace();
 				}
 						
 			}
 		}
 		try {
-			context.write(keyin, new Text(info[0] + "\t" + Double.toString(pr)));
+			context.write(keyin, new Text(info[0] + CONST.L0_DIV + Double.toString(pr)));
 		} catch (IOException | InterruptedException e) {
-			// TODO Auto-generated catch block
+			System.out.println("error4");
 			e.printStackTrace();
 		}
 			

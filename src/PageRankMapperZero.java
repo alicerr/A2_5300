@@ -32,11 +32,11 @@ public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable,
 			try {
 				context.write(toInt, nullTo);
 			} catch (IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
+				System.out.println("error2");
 				e.printStackTrace();
 			}
 		} catch (NumberFormatException e) {
-			// TODO Auto-generated catch block
+			System.out.println("error1");
 			e.printStackTrace();
 		}
 	}
