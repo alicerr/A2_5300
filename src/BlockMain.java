@@ -39,6 +39,8 @@ public class BlockMain {
         	conf = new Configuration();
         	conf.setLong("TOTAL_NODES", totalNodes);
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
+        	
+        	job.setJarByClass(BlockMain.class);
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
      	    

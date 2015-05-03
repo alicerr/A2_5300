@@ -6,6 +6,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 public class PageRankMain {
 	public static void main(String[] args) throws Exception {
 	    Configuration conf = new Configuration();
@@ -20,7 +21,8 @@ public class PageRankMain {
 	    job.setOutputKeyClass(LongWritable.class);
 	    job.setOutputValueClass(Text.class);
         
-        job.setInputFormatClass(TextInputFormat.class);    
+	    job.setInputFormatClass(TextInputFormat.class);
+	    job.setOutputFormatClass(SequenceFileOutputFormat.class);   
         job.waitForCompletion(true);
         long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
         System.out.println("Total Nodes: " + totalNodes);
@@ -41,6 +43,9 @@ public class PageRankMain {
      	    job.setOutputKeyClass(LongWritable.class);
      	    job.setOutputValueClass(Text.class);
             job.setJarByClass(PageRankMain.class);
+            
+            job.setInputFormatClass(SequenceFileInputFormat.class);
+     	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
             
             job.waitForCompletion(true);
             double residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
