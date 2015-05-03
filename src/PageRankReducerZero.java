@@ -16,9 +16,9 @@ public class PageRankReducerZero extends Reducer<LongWritable, Text, LongWritabl
 			toList = toList.substring(1);
 		} 
 		try {
-			context.write(key, new Text(toList + "\t" + CONST.BASE_PAGE_RANK));
+			context.write(key, new Text(toList + CONST.L0_DIV + CONST.BASE_PAGE_RANK));
 		} catch (IOException | InterruptedException e) {
-			// TODO Auto-generated catch block
+			System.out.println("error3");
 			e.printStackTrace();
 		}
 		context.getCounter(PageRankEnum.TOTAL_NODES).increment(1);

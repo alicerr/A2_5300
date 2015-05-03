@@ -12,8 +12,8 @@ public class PageRankReducer extends Reducer<LongWritable, Text, LongWritable, T
 		double oldPageRank = 0.;
 		String toList = "";
 		for (Text val : vals){
-			if (val.toString().contains("\t")){
-				String[] info = val.toString().split("\t");
+			if (val.toString().contains(CONST.L0_DIV)){
+				String[] info = val.toString().split(CONST.L0_DIV);
 				toList = info[0];
 				oldPageRank = Double.parseDouble(info[1]);
 			} else {
@@ -22,12 +22,9 @@ public class PageRankReducer extends Reducer<LongWritable, Text, LongWritable, T
 			
 		}
 		double residualValue = Math.abs(newPageRank - oldPageRank)/newPageRank;
-		System.out.println("reduce for: " + key);
-		for (Text val : vals)
-			System.out.println(key + " " + val);
 		context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long)(residualValue * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG + .5));
 		try {
-			context.write(key, new Text(toList + "\t" + newPageRank + "\t" + residualValue));
+			context.write(key, new Text(toList + CONST.L0_DIV + newPageRank + CONST.L0_DIV + residualValue));
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

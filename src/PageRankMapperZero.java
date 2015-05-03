@@ -6,7 +6,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable, Text> {
 	
 	
-	public void mapper(LongWritable keyin, Text val, Context context){
+	public void map(LongWritable keyin, Text val, Context context){
+		
 		String[] info = val.toString().split(" ");
 		try {
 			double select = Double.parseDouble(info[0]);
@@ -32,11 +33,11 @@ public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable,
 			try {
 				context.write(toInt, nullTo);
 			} catch (IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
+				System.out.println("error2");
 				e.printStackTrace();
 			}
 		} catch (NumberFormatException e) {
-			// TODO Auto-generated catch block
+			System.out.println("error1");
 			e.printStackTrace();
 		}
 	}
