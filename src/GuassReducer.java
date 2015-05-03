@@ -50,10 +50,8 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 
 		//per round holders
 		HashMap<Integer, Node> nodesLastPass = new HashMap<Integer, Node>();
-		HashMap<Integer, Node> nodesThisPass = new HashMap<Integer, Node>();
 		boolean converged = false;
 		double residualSum = 0.;
-		double newInBlockSink = 0.;
 		for (Node n : nodes.values()){
 			nodesLastPass.put(n.id, new Node(n));
 		}
@@ -86,7 +84,7 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 				
 				//look for sink
 				if (nPrime.edges() == 0)
-					inBlockSink += pr - n.prOnEdge();
+					inBlockSink += pr - n.getPR();
 				
 			}
 			
