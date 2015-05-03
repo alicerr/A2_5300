@@ -27,6 +27,7 @@ public class PageRankMain {
 	    job.setOutputFormatClass(SequenceFileOutputFormat.class);     
         job.waitForCompletion(true);
         long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
+        System.out.println("Total Nodes: " + totalNodes);
         int round = 1;
         while (round < 6){
         	String inputFile = outputFile;

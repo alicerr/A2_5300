@@ -7,7 +7,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 public class PageRankMapper extends Mapper<LongWritable, Text, LongWritable, Text> {
 
-	public void mapper(LongWritable keyin, Text val, Context context){
+	public void map(LongWritable keyin, Text val, Context context){
+		System.out.println(val);
 		String[] info = val.toString().split("\t");
 		String[] toList = info[0].split(",");
 		Double pr = Double.parseDouble(info[1]);
