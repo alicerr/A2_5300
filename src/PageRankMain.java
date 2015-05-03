@@ -24,7 +24,7 @@ public class PageRankMain {
         job.waitForCompletion(true);
         long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
         int round = 1;
-        while (round < 3){
+        while (round < 6){
         	String inputFile = outputFile;
         	outputFile = args[1] + " pass " + round;
         	conf = new Configuration();
