@@ -73,10 +73,7 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 				//in block pr
 				if (innerEdges.containsKey(n.id))
 					for (Edge e : innerEdges.get(n.id))
-						if (nodesThisPass.containsKey(e.from))
-							pr += CONST.DAMPING_FACTOR * nodesThisPass.get(e.from).prOnEdge();
-						else
-							pr += CONST.DAMPING_FACTOR * nodesLastPass.get(e.from).prOnEdge();
+						pr += CONST.DAMPING_FACTOR * nodesLastPass.get(e.from).prOnEdge();
 				
 				//residual
 				double residual = Math.abs((pr - n.getPR()))/pr;
@@ -85,18 +82,13 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 				//save value
 				Node nPrime = new Node(n);
 				nPrime.setPR(pr);
-				nodesThisPass.put(nPrime.id, nPrime);
+				nodesLastPass.put(nPrime.id, nPrime);
 				
 				//look for sink
 				if (nPrime.edges() == 0)
-					newInBlockSink += pr;
+					inBlockSink += pr - n.prOnEdge();
 				
 			}
-			//reset holders
-			nodesLastPass = nodesThisPass;
-			nodesThisPass = new HashMap<Integer, Node>();
-			inBlockSink = newInBlockSink;
-			newInBlockSink = 0;
 			
 			//check for convergence
 			converged = residualSum < CONST.RESIDUAL_SUM_DELTA;
