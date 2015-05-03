@@ -112,7 +112,7 @@ public class PageRankBlockReducer extends
 				double residual = Math.abs((n.getPR() - nodes.get(n.id).getPR()))/n.getPR();
 				residualSumOuter += residual;
 			}
-			context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long) (residualSumOuter * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG));
+			context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long) (residualSumOuter * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG + .5));
 			
 			//save updated block
 			String block = Util.getBlockDataAsString(nodesLastPass, innerEdgesString, outerEdgesString);

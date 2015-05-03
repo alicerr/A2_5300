@@ -11,14 +11,14 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-public class BlockMain {
+public class GaussMain {
 	public static void main(String[] args) throws Exception {
 	    Configuration conf = new Configuration();
 	    String outputFile = args[1] + " pass 0";
 	    
 	    Job job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
 	    
-	    job.setJarByClass(BlockMain.class);
+	    job.setJarByClass(GaussMain.class);
 	    FileInputFormat.setInputPaths(job, new Path(args[0]));
 	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
 	    
@@ -43,10 +43,10 @@ public class BlockMain {
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-    	    job.setJarByClass(BlockMain.class);
+    	    job.setJarByClass(GaussMain.class);
     	    
      	    job.setMapperClass(PageRankBlockMapper.class);
-     	    job.setReducerClass(PageRankBlockReducer.class);
+     	    job.setReducerClass(GuassReducer.class);
      	    job.setOutputKeyClass(LongWritable.class);
      	    job.setOutputValueClass(Text.class);
              
@@ -70,7 +70,7 @@ public class BlockMain {
     	job = Job.getInstance(conf, "page rank " + args[1] + " pass get final nodes");
     	FileInputFormat.setInputPaths(job, new Path(inputFile));
  	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-	    job.setJarByClass(BlockMain.class);
+	    job.setJarByClass(GaussMain.class);
 	    
  	    job.setMapperClass(GetFinalNodesMapper.class);
  	    job.setReducerClass(Reducer.class);
