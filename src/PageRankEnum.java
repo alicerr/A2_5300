@@ -1,5 +1,10 @@
 
 
+/**
+ * PageRank Values used in all main files
+ * @author Alice, Spencer, Garth
+ *
+ */
 public enum PageRankEnum {
 	PASS,
 	RESIDUAL_SUM,

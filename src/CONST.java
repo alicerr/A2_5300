@@ -1,5 +1,10 @@
 
 
+/**
+ * Constants used in Node, block, and Gauss pagerank runs
+ * @author Alice, Spencer, Garth
+ *
+ */
 public abstract class CONST {
 	public static final double BASE_PAGE_RANK = .5;
 	public static final double DAMPING_FACTOR = .85;

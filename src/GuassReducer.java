@@ -7,7 +7,17 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 
+/**
+ * Implements the subsequent Jobs reduce functionality for GaussMain.java
+ * VERY VERY similar to PageRankBlockReducer.java see notes in comments below
+ * for difference. (Uses most up to date values for nodes)
+ * @author Alice, Spencer, Garth
+ *
+ */
 public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text>   {
+	/** Overrites reduce
+	 * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+	 */
 	public void reduce(LongWritable key, Iterable<Text> vals, Context context){
 
 		//information holders for vals
@@ -80,6 +90,7 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 				//save value
 				Node nPrime = new Node(n);
 				nPrime.setPR(pr);
+				// Save it in same map, instead of a separate
 				nodesLastPass.put(nPrime.id, nPrime);
 				
 				//look for sink
@@ -87,6 +98,12 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 					inBlockSink += pr - n.getPR();
 				
 			}
+			
+			// DIFFERENT FROM PAGERANKBLOCKREDUCER.java
+			// There is no nodes this pass vs. last pass
+			// This is because Gauss uses the most up to date values in each 
+			// node rather than only updating after we have been through 
+			// the whole block.
 			
 			//check for convergence
 			converged = residualSum < CONST.RESIDUAL_SUM_DELTA;

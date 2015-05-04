@@ -11,9 +11,21 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+/** 
+ * Main class for running Blocked PageRank
+ * @author Alice, Spencer, Garth
+ *
+ */
 public class BlockMain {
+	/**
+	 * Runs the Blocked PageRank map reduce jobs
+	 * @param args input and output location (for Amazon EMR these should be in s3)
+	 * @throws Exception
+	 */
 	public static void main(String[] args) throws Exception {
-	    Configuration conf = new Configuration();
+	    Configuration conf = new Configuration(); 
+	    
+	    // Creating the Job for the first pass - processing input file
 	    String outputFile = args[1] + " pass 0";
 	    
 	    Job job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
@@ -35,10 +47,15 @@ public class BlockMain {
         double residualSum = 1;
         String inputFile;
         
+        // After first pass we loop through several jobs until the termination condition is met
+        // Termination Condition: resdidual sum < .001
         while (residualSum > CONST.RESIDUAL_SUM_DELTA){
-        	inputFile = outputFile;
+        	// Last runs output is input for the next run
+        	inputFile = outputFile; 
+        	
+        	// Set up next job config
         	outputFile = args[1] + " pass " + round;
-        	conf = new Configuration();
+        	conf = new Configuration(); 
         	conf.setLong("TOTAL_NODES", totalNodes);
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
@@ -54,6 +71,8 @@ public class BlockMain {
      	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
              
             job.waitForCompletion(true);
+            
+            // After job completes - add up necessary counters and output info
 			org.apache.hadoop.mapreduce.Counter innerBlockRounds = job.getCounters().findCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
 			
             residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
@@ -64,6 +83,8 @@ public class BlockMain {
             round++;
         	
         }
+        
+        // After completing rounds above we do one more job to get specific data for write up
         inputFile = outputFile;
     	outputFile = args[1] + " pageRank output.txt";
     	conf = new Configuration();

@@ -2,8 +2,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 
+/**
+ * Util class used by Main classes
+ * @author Alice, Spencer, Garth
+ *
+ */
 public abstract class Util {
 
+	/**
+	 * Specifies if we should keep an edge based on netid SHS257
+	 * @param number number from edges.txt to determine 
+	 * @return true to keep edge, false otherwise
+	 */
 	public static boolean retainEdgeByNodeID(double number){
 		// compute filter parameters for netid shs257
 		double fromNetID = 0.752; // 752 is 257 reversed
@@ -12,6 +22,11 @@ public abstract class Util {
 		return (number < rejectMin || number >= rejectLimit);
 	}
 	
+	/**
+	 * Maps nodeID to block
+	 * @param id nodeID
+	 * @return blockID
+	 */
 	public static int idToBlock(int id){
 		int guess = id/10078;
 		boolean goodGuess = false;
@@ -29,6 +44,9 @@ public abstract class Util {
 	}
 	
 	
+	/**
+	 * Defines blocks... from Blocks.txt
+	 */
 	public final static int[] blocks  = {
 		10328,
 		20373,
@@ -100,6 +118,13 @@ public abstract class Util {
 		685230};
 
 
+	/**
+	 * Turns Block data to a string value from string buffers
+	 * @param nodes all nodes in block
+	 * @param innerEdges list of inner edges
+	 * @param outerEdges list of outer edges
+	 * @return string representation
+	 */
 	public static String getBlockDataAsString(StringBuffer nodes,
 			StringBuffer innerEdges, StringBuffer outerEdges) {
 		if (nodes.length() == 0)
@@ -116,6 +141,14 @@ public abstract class Util {
 		
 	}
 	
+	/**
+	 * String representation to block data structures
+	 * @param info string array with data
+	 * @param nodes all nodes in block
+	 * @param innerEdges all inside edges
+	 * @param outerEdges all outside edges
+	 * @return sinks value
+	 */
 	public static double fillMapsFromBlockString(String[] info, 
 			HashMap<Integer, Node> nodes, 
 			HashMap<Integer, ArrayList<Edge>> innerEdges, 
@@ -173,6 +206,13 @@ public abstract class Util {
 		return sinks;
 	}
 
+	/**
+	 * Turns Block data to a string value from Hashmaps and strings
+	 * @param nodes all nodes in block
+	 * @param innerEdges list of inner edges
+	 * @param outerEdges list of outer edges
+	 * @return string representation
+	 */
 	public static String getBlockDataAsString(
 			HashMap<Integer, Node> nodes,
 			String innerEdgesString,
@@ -186,6 +226,12 @@ public abstract class Util {
 		return CONST.ENTIRE_BLOCK_DATA_MARKER + CONST.L0_DIV + nodesSB.toString().substring(1) + CONST.L0_DIV + innerEdgesString + CONST.L0_DIV + outerEdgesString;
 	}
 	
+	/**
+	 * Checks if given node is one of the first two in a block
+	 * @param blockIndex blockID
+	 * @param nodeIndex nodeID
+	 * @return true if it is a first two nodes, false otherwise
+	 */
 	public static boolean isInFirstTwoIndex(int blockIndex, long nodeIndex){
 		return nodeIndex == 0 || nodeIndex == 1 ||
 				(blockIndex > 0 && (nodeIndex == blocks[blockIndex - 1] || nodeIndex == blocks[blockIndex - 1] +1));
