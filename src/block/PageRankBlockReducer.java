@@ -1,3 +1,4 @@
+package block;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -5,6 +6,13 @@ import java.util.HashMap;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
+
+import common.CONST;
+import common.Edge;
+import common.Node;
+import common.OuterEdgeValue;
+import common.PageRankEnum;
+import common.Util;
 
 
 /**

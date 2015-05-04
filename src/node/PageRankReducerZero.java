@@ -1,7 +1,11 @@
+package node;
 import java.io.IOException;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Reducer;
+
+import common.CONST;
+import common.PageRankEnum;
 
 
 /**

@@ -1,7 +1,10 @@
+package node;
 import java.io.IOException;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Mapper;
+
+import common.Util;
 
 /**
 * Implements the first Job map functionality for PageRankMain.java

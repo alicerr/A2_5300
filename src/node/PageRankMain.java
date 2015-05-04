@@ -1,3 +1,4 @@
+package node;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -7,6 +8,9 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+
+import common.CONST;
+import common.PageRankEnum;
 /** 
  * Main class for running Node PageRank
  * @author Alice, Spencer, Garth

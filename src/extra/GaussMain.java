@@ -1,3 +1,4 @@
+package extra;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -11,6 +12,13 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import block.BlockMapperPass0;
+import block.BlockReducerPass0;
+import block.PageRankBlockMapper;
+import common.CONST;
+import common.GetFinalNodesMapper;
+import common.PageRankEnum;
 
 
 /**

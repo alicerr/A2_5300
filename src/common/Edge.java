@@ -1,3 +1,4 @@
+package common;
 import org.apache.hadoop.io.Text;
 
 
