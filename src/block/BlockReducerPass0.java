@@ -68,6 +68,7 @@ public class BlockReducerPass0 extends
 			outerEdges.append(CONST.L1_DIV);
 		try {
 			// Write out block data for next job
+			// (blockID - > {nodeList, innerEdges, outerEdged})
 			context.write(key, new Text(Util.getBlockDataAsString(nodes, innerEdges, outerEdges)));
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block

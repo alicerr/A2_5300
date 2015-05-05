@@ -36,6 +36,7 @@ public class PageRankMapper extends Mapper<LongWritable, Text, LongWritable, Tex
 			for (String to : toList){
 				int toID = Integer.parseInt(to);
 				try {
+					// (toNodeID -> PR/toListSize)
 					context.write(new LongWritable(toID), new Text(Double.toString(pr/toList.length)));
 				} catch (IOException | InterruptedException e) {
 					System.out.println("error5");
@@ -46,6 +47,7 @@ public class PageRankMapper extends Mapper<LongWritable, Text, LongWritable, Tex
 		}
 		// Write Data out
 		try {
+			// (nodeID -> toList, PR)
 			context.write(keyin, new Text(info[0] + CONST.L0_DIV + Double.toString(pr)));
 		} catch (IOException | InterruptedException e) {
 			System.out.println("error4");

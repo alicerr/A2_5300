@@ -43,6 +43,7 @@ public class PageRankReducer extends Reducer<LongWritable, Text, LongWritable, T
 		
 		// Write out key, with to list and updated PR and residual
 		try {
+			// (nodeID -> toList, upDated PR, residualValue)
 			context.write(key, new Text(toList + CONST.L0_DIV + newPageRank + CONST.L0_DIV + residualValue));
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block

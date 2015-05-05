@@ -34,6 +34,7 @@ public class BlockMapperPass0 extends
 			
 			if (Util.retainEdgeByNodeID(select)){ // If we should keep the edge (based on netid) 
 				try {
+					// (blockID -> {fromID, toID})
 					context.write(new LongWritable(fromBlock), new Text(CONST.SEEN_EDGE_MARKER + CONST.L0_DIV + fromInt + CONST.L0_DIV + toInt));
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -41,6 +42,7 @@ public class BlockMapperPass0 extends
 				}
 			} else { // Else we shouldn't keep the edge and we save it with no toInt
 				try {
+					// (blockID -> {fromID})
 					context.write(new LongWritable(fromBlock), new Text(CONST.SEEN_NODE_MARKER + CONST.L0_DIV + fromInt));
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -48,7 +50,7 @@ public class BlockMapperPass0 extends
 				}
 				
 			}
-			try { // Write toBlock maps to with just a toInt. In case we don't see this node again (we don't want to lose a node)
+			try { // Write toBlock maps to with just a toInt. In case we don't see this node again (we don't want to lose a node
 				context.write(new LongWritable(toBlock), new Text(CONST.SEEN_NODE_MARKER + CONST.L0_DIV + toInt));
 			} catch (IOException | InterruptedException e) {
 				// TODO Auto-generated catch block

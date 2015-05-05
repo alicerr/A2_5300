@@ -42,6 +42,7 @@ public void map(LongWritable keyin, Text val, Context context){
 		for (ArrayList<Edge> ae : outerEdges.values()){
 			for (Edge e : ae){
 				try { // Get all the PR values from edges of block
+					// (toBlockID -> {toNode, PRonEdge})
 					context.write(new LongWritable(Util.idToBlock(e.to)), new Text(CONST.INCOMING_EDGE_MARKER + CONST.L0_DIV + e.to + CONST.L0_DIV + nodes.get(e.from).prOnEdge()));
 				} catch (IOException | InterruptedException e1) {
 					// TODO Auto-generated catch block
@@ -50,6 +51,7 @@ public void map(LongWritable keyin, Text val, Context context){
 			}
 		}
 		try { // Write keyin and val for next round
+			// (blockID -> {Block data})
 			context.write(keyin, val);
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block

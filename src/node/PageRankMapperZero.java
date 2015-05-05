@@ -31,6 +31,7 @@ public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable,
 			// Check to see if we keep the edge based on netid
 			if (Util.retainEdgeByNodeID(select)){ // If we keep it, write edge out (from node, to node)
 				try {
+					// (fromNodeID -> toNodeID)
 					context.write(fromInt, toText);
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -38,13 +39,15 @@ public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable,
 				}
 			} else { // else keep node so we don't lose it, but have it point to null node
 				try {
+					// (fromNodeID -> null)
 					context.write(fromInt, nullTo);
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
-			try { // To ensure we don't lose a node, write out nodeTo with no edges 
+			try { // To ensure we don't lose a node, write out nodeTo with no edges
+				// (toNodeID -> null)
 				context.write(toInt, nullTo);
 			} catch (IOException | InterruptedException e) {
 				System.out.println("error2");

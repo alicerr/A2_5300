@@ -139,6 +139,7 @@ public class PageRankBlockReducer extends
 			// Save updated Block data
 			String block = Util.getBlockDataAsString(nodesLastPass, innerEdgesString, outerEdgesString);
 			try {
+				// (blockID -> {nodes, innerEdges, outerEdges})
 				context.write(key, new Text(block));
 			} catch (IOException | InterruptedException e) {
 				// TODO Auto-generated catch block

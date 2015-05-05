@@ -29,6 +29,7 @@ public class PageRankReducerZero extends Reducer<LongWritable, Text, LongWritabl
 			toList = toList.substring(1);
 		} 
 		try { // Write out from -> List of toID, PR
+			// (nodeID -> list of outgoing edges, PR)
 			context.write(key, new Text(toList + CONST.L0_DIV + CONST.BASE_PAGE_RANK));
 		} catch (IOException | InterruptedException e) {
 			System.out.println("error3");
