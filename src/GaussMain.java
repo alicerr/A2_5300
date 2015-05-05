@@ -90,6 +90,7 @@ public class GaussMain {
         inputFile = outputFile;
     	outputFile = args[1] + " pageRank output.txt";
     	conf = new Configuration();
+    	conf.setLong("TOTAL_NODES", totalNodes);
     	job = Job.getInstance(conf, "page rank " + args[1] + " pass get final nodes");
     	FileInputFormat.setInputPaths(job, new Path(inputFile));
  	    FileOutputFormat.setOutputPath(job, new Path(outputFile));

@@ -24,6 +24,7 @@ public abstract class CONST {
 							   L1_DIV = ":",
 							   L2_DIV = ",";
 	public static final double RESIDUAL_SUM_DELTA = 0.001;
+	public static final double TOTAL_NODES = 685230;
 			                
 			                
 			                

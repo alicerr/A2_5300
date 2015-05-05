@@ -1,6 +1,8 @@
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.ByteWritable;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -11,88 +13,88 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-/** 
- * Main class for running Blocked PageRank
+
+
+/**
+ * Runs the Gauss Map Reduce
  * @author Alice, Spencer, Garth
  *
  */
-public class BlockMain {
+public class OptimusMain {
 	/**
-	 * Runs the Blocked PageRank map reduce jobs
-	 * @param args input and output location (for Amazon EMR these should be in s3)
+	 * @param args input output
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
-	    Configuration conf = new Configuration(); 
+	    Configuration conf = new Configuration();
 	    
-	    // Creating the Job for the first pass - processing input file
+	    // Set up first job to process input file notice it uses same mapper and reducer as block
 	    String outputFile = args[1] + " pass 0";
 	    
 	    Job job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
 	    
-	    job.setJarByClass(BlockMain.class);
+	    job.setJarByClass(OptimusMain.class);
 	    FileInputFormat.setInputPaths(job, new Path(args[0]));
 	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
 	    
-	    job.setMapperClass(BlockMapperPass0.class);
-	    job.setReducerClass(BlockReducerPass0.class);
-	    job.setOutputKeyClass(LongWritable.class);
-	    job.setOutputValueClass(Text.class);
+	    job.setMapperClass(OptimusMapper0.class);
+	    job.setReducerClass(OptimusReducer0.class);
+	    job.setOutputKeyClass(ByteWritable.class);
+	    job.setOutputValueClass(BytesWritable.class);
         
         job.setInputFormatClass(TextInputFormat.class);
 	    job.setOutputFormatClass(SequenceFileOutputFormat.class);     
         job.waitForCompletion(true);
-        long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
+        
+        // Set up for looped jobs
         int round = 1;
         double residualSum = 1;
         String inputFile;
         
-        // After first pass we loop through several jobs until the termination condition is met
-        // Termination Condition: resdidual sum < .001
+        // Continue to loop until residual sum is low enough using Block Mapper and Gauss Reducer
         while (residualSum > CONST.RESIDUAL_SUM_DELTA){
-        	// Last runs output is input for the next run
-        	inputFile = outputFile; 
         	
-        	// Set up next job config
+        	// Set up subsequent jobs
+        	inputFile = outputFile;
         	outputFile = args[1] + " pass " + round;
-        	conf = new Configuration(); 
-        	conf.setLong("TOTAL_NODES", totalNodes);
+        	conf = new Configuration();
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-    	    job.setJarByClass(BlockMain.class);
+    	    job.setJarByClass(OptimusMain.class);
     	    
-     	    job.setMapperClass(PageRankBlockMapper.class);
-     	    job.setReducerClass(PageRankBlockReducer.class);
-     	    job.setOutputKeyClass(LongWritable.class);
-     	    job.setOutputValueClass(Text.class);
+     	    job.setMapperClass(OptimusMapper1.class);
+     	    job.setReducerClass(OptimusReducer.class);
+     	    job.setOutputKeyClass(ByteWritable.class);
+     	    job.setOutputValueClass(BytesWritable.class);
              
      	    job.setInputFormatClass(SequenceFileInputFormat.class);
      	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
              
             job.waitForCompletion(true);
             
-            // After job completes - add up necessary counters and output info
+            // Get counters
 			org.apache.hadoop.mapreduce.Counter innerBlockRounds = job.getCounters().findCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
-			
             residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
+            
+            // Output information
         	System.out.println("Round: " + round + 
         			" \nInner block rounds total: " + innerBlockRounds.getValue() + " avg " + innerBlockRounds.getValue()/68. +
-        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/totalNodes + "\n");
-        	residualSum = residualSum/(double)totalNodes;
+        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/CONST.TOTAL_NODES + "\n");
+        	residualSum = residualSum/CONST.TOTAL_NODES;
             round++;
         	
         }
         
-        // After completing rounds above we do one more job to get specific data for write up
+        // Create desired output files
         inputFile = outputFile;
     	outputFile = args[1] + " pageRank output.txt";
     	conf = new Configuration();
-    	conf.setLong("TOTAL_NODES", totalNodes);
+    	conf.setLong("TOTAL_NODES", (long) CONST.TOTAL_NODES);
     	job = Job.getInstance(conf, "page rank " + args[1] + " pass get final nodes");
     	FileInputFormat.setInputPaths(job, new Path(inputFile));
  	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-	    job.setJarByClass(BlockMain.class);
+	    job.setJarByClass(OptimusMain.class);
 	    
  	    job.setMapperClass(GetFinalNodesMapper.class);
  	    job.setReducerClass(Reducer.class);
