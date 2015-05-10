@@ -42,21 +42,19 @@ public class BlockMain {
         job.setInputFormatClass(TextInputFormat.class);
 	    job.setOutputFormatClass(SequenceFileOutputFormat.class);     
         job.waitForCompletion(true);
-        long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
         int round = 1;
-        double residualSum = 1;
+        double residualSum = Double.MAX_VALUE;
         String inputFile;
         
         // After first pass we loop through several jobs until the termination condition is met
         // Termination Condition: resdidual sum < .001
-        while (residualSum > CONST.RESIDUAL_SUM_DELTA){
+        while (residualSum/CONST.TOTAL_NODES > CONST.RESIDUAL_SUM_DELTA){
         	// Last runs output is input for the next run
         	inputFile = outputFile; 
         	
         	// Set up next job config
         	outputFile = args[1] + " pass " + round;
         	conf = new Configuration(); 
-        	conf.setLong("TOTAL_NODES", totalNodes);
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
@@ -78,8 +76,8 @@ public class BlockMain {
             residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
         	System.out.println("Round: " + round + 
         			" \nInner block rounds total: " + innerBlockRounds.getValue() + " avg " + innerBlockRounds.getValue()/68. +
-        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/totalNodes + "\n");
-        	residualSum = residualSum/(double)totalNodes;
+        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/CONST.TOTAL_NODES + "\n");
+        	
             round++;
         	
         }
@@ -88,7 +86,6 @@ public class BlockMain {
         inputFile = outputFile;
     	outputFile = args[1] + " pageRank output.txt";
     	conf = new Configuration();
-    	conf.setLong("TOTAL_NODES", totalNodes);
     	job = Job.getInstance(conf, "page rank " + args[1] + " pass get final nodes");
     	FileInputFormat.setInputPaths(job, new Path(inputFile));
  	    FileOutputFormat.setOutputPath(job, new Path(outputFile));

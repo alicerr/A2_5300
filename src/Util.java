@@ -1,5 +1,6 @@
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -7,12 +8,12 @@ import java.util.HashMap;
 
 public abstract class Util {
 
-	public static boolean retainEdgeByNodeID(double number){
+	public static boolean retainEdgeByNodeID(double x){
 		// compute filter parameters for netid shs257
-		double fromNetID = 0.752; // 752 is 257 reversed
+		double fromNetID = 0.752;// 82 is 28 reversed
 		double rejectMin = 0.9 * fromNetID;
 		double rejectLimit = rejectMin + 0.01;
-		return (number < rejectMin || number >= rejectLimit);
+		return ( ((x >= rejectMin) && (x < rejectLimit)) ? false : true );
 	}
 	
 	public static int idToBlock(int id){
@@ -103,9 +104,9 @@ public abstract class Util {
 		685230};
 	
 	public static byte[] getIntAs3Bytes(int i){
-		byte b3 = (byte)i;
-		byte b2 = (byte)(i >> 8);
-		byte b1 = (byte)(i >> 16);
+		byte b3 = (byte)(i & 255);
+		byte b2 = (byte)((i >> 8) & 255);
+		byte b1 = (byte)((i >> 16) & 255);
 		return new byte[]{b1, b2, b3 };
 	}
 	public static int get3BytesAsInt(byte[] b){
@@ -114,12 +115,12 @@ public abstract class Util {
 	
 	public static byte[] intArrayToi3Bytes(int[] a){
 		ByteBuffer b = ByteBuffer.allocate((int) (a.length * 3));
-		for (int i : a){
+		for (int i = 0; i < a.length; i++){
 		
 			
-			b.put((byte) (i >> 16));
-			b.put((byte) (i >> 8));		
-			b.put((byte) i);
+			b.put((byte) ((a[i] >>> 16) & 255));
+			b.put((byte) ((a[i] >>> 8) & 255));		
+			b.put((byte) (a[i] & 255));
 			}
 		 return b.array();
 		}
@@ -136,6 +137,21 @@ public abstract class Util {
 			hold = hold + (b[x] & 255);
 		}
 		i[iIndex] = hold;
+		return i;
+	}
+	public static  int[] i3byteArrayToIntArray(byte[] b, int start, int end){
+		int[] i = new int[(end - start)/3];
+		int hold = 0;
+		int iIndex = 0;
+		for (int x = start; x < end; x++){
+
+			hold = hold << 8;
+			hold = hold + (b[x] & 255);
+			if (x % 3 == 2){
+				i[iIndex++] = hold;
+				hold = 0;
+			}
+		}
 		return i;
 	}
 	
@@ -205,7 +221,7 @@ public abstract class Util {
 					} else {
 						ArrayList<Edge> outerEdgesFromNode = new ArrayList<Edge>();
 						outerEdgesFromNode.add(e);
-						outerEdges.put(e.from, outerEdgesFromNode);
+						outerEdges.put(e.to, outerEdgesFromNode);
 					}
 				}
 			}
@@ -216,9 +232,92 @@ public abstract class Util {
 			if (n.edges() == 0)
 				sinks += n.getPR();
 		}
+
 		return sinks;
 	}
-
+	public static ByteBuffer blockToByteBuffer(HashMap<Integer, Node> n, HashMap<Integer, ArrayList<Edge>> i, HashMap<Integer, ArrayList<Edge>> o){
+		int innerEdgeCount = 0;
+		for (ArrayList<Edge> ae: i.values())
+				innerEdgeCount += ae.size();
+		
+		int outerEdgeCount = 0;
+		for (ArrayList<Edge> ae: o.values()){
+			outerEdgeCount += ae.size();
+		}
+		ByteBuffer b = ByteBuffer.allocate(1 + 4+ (4+4+8)*n.size() + 8 * innerEdgeCount + 8 * outerEdgeCount + 8);
+		b.put(CONST.ENTIRE_BLOCK_DATA_MARKER);
+		b.putInt(n.size());
+		for (Node nn : n.values()){
+			b.putInt(nn.id);
+			b.putInt(nn.edges());
+			b.putDouble(nn.getPR());
+			
+		}
+		b.putInt(innerEdgeCount);
+		for (ArrayList<Edge> ae: i.values()){
+			for (Edge e: ae){
+				b.putInt(e.from);
+				b.putInt(e.to);
+			}
+		}
+		b.putInt(outerEdgeCount);
+		for (ArrayList<Edge> ae: o.values()){
+			for (Edge e: ae){
+				b.putInt(e.from);
+				b.putInt(e.to);
+			}
+		}
+		return b;
+	}
+	public static double fillBlockFromByteBuffer(ByteBuffer b, HashMap<Integer, Node> n, HashMap<Integer, ArrayList<Edge>> i, HashMap<Integer, ArrayList<Edge>> o){
+		b.get();
+		int nodeCount = b.getInt();
+		double sink = 0.;
+		for (int ind = 0; ind < nodeCount; ind++){
+			Node nn = new Node(b.getInt());
+			nn.setEdges(b.getInt());
+			nn.setPR(b.getDouble());
+			n.put(nn.id, nn);
+			if (nn.edges() == 0){
+				sink+=nn.getPR();
+			}
+		}
+		int iCount = b.getInt();
+		for (int ind = 0; ind < iCount; ind++){
+			Edge e = new Edge(b.getInt(), b.getInt());
+			if (i.containsKey(e.to))
+				i.get(e.to).add(e);
+			else{
+				ArrayList<Edge> ae = new ArrayList<Edge>();
+				ae.add(e);
+				i.put(e.to,  ae);
+			}
+		}
+		int oCount = b.getInt();
+		if (o != null){
+			for (int ind = 0; ind < oCount; ind++){
+				Edge e = new Edge(b.getInt(), b.getInt());
+				if (o.containsKey(e.from))
+					o.get(e.from).add(e);
+				else{
+					ArrayList<Edge> ae = new ArrayList<Edge>();
+					ae.add(e);
+					o.put(e.from,  ae);
+				}
+			}
+		}
+		
+		return sink;
+	}
+	public static byte[] incomingValue(int to, Node n){
+		ByteBuffer b = ByteBuffer.allocate(13);
+		b.put(CONST.INCOMING_EDGE_MARKER);
+		b.putInt(to);
+		b.putDouble(n.prOnEdge());
+		return b.array();
+	}
+	
+	
 	public static String getBlockDataAsString(
 			HashMap<Integer, Node> nodes,
 			String innerEdgesString,
@@ -239,23 +338,21 @@ public abstract class Util {
 	public static byte[] getBlockDataAsBytes(double[] pr,
 			int[] innerEdges, int[] outerEdges) {
 		ByteBuffer b = ByteBuffer.allocate(pr.length * 8 + 4 + innerEdges.length * 3 + outerEdges.length * 3);
-		for (double d : pr)
-			b.putDouble(d);
-		if (innerEdges.length == 0){
-			System.out.println("here");
-		}
+		for (int i = 0; i < pr.length; i++)
+			b.putDouble(pr[i]);
 		b.putInt(innerEdges.length);
-		for (int i : innerEdges){
-			
-			byte[] ib = getIntAs3Bytes(i);
+		for (int i = 0; i < innerEdges.length; i++){
+			byte[] ib = getIntAs3Bytes(innerEdges[i]);
 			for (byte bb : ib)
 				b.put(bb);
 		}
-		for (int i : outerEdges){
-			byte[] ib = getIntAs3Bytes(i);
+		for (int i = 0; i < outerEdges.length; i++){
+			byte[] ib = getIntAs3Bytes(outerEdges[i]);
 			for (byte bb : ib)
 				b.put(bb);
 		}
+		System.out.println(b.array().length);
+		System.out.println(b.position());
 		return b.array();
 			
 	}
@@ -269,7 +366,8 @@ public abstract class Util {
 		int[] edges = new int[nodes.length];
 		
 			for (int i = 0; i < inner.length; i++){
-				int e = get3BytesAsInt(new byte[]{bb.get(), bb.get(), bb.get()});
+				byte[] bbb = new byte[]{bb.get(), bb.get(), bb.get()};
+				int e = get3BytesAsInt(bbb);
 			inner[i] = e;
 			try{			
 				if (i % 2 == 1)
@@ -279,23 +377,40 @@ public abstract class Util {
 				System.out.println(ee);
 				System.out.println("e:" + e);
 				System.out.println("base:" + base);
-				System.out.println("from:" + inner[i - e]);
+				System.out.println("i:" + i);
+				for (byte bbbb : bbb){
+					System.out.println(bbbb);
+				}
+				for (int ii = nodes.length * 8; ii < b.length; ii++){
+					System.out.print(ii + ":" + b[ii] + ",");
+				}
+				System.out.println("to:" + inner[i - 1]);
 				throw ee;
 			}
 			}
 		int bIndex = bb.position();
 		int[] outer = new int[(b.length - bIndex)/3];
 		for (int i = 0; i < outer.length; i++){
-			int e = get3BytesAsInt(new byte[]{bb.get(), bb.get(), bb.get()});
+			byte[] bbb = new byte[]{bb.get(), bb.get(), bb.get()};
+			int e = get3BytesAsInt(bbb);
 			outer[i] = e;
 			if (i % 2 == 1)
 				try{
 				edges[e - base]++;
 				} catch (Exception ee){
+					System.out.println(bb.position());
 					System.out.println(ee);
 					System.out.println("e:" + e);
 					System.out.println("base:" + base);
-					System.out.println("from:" + inner[i - e]);
+					System.out.println("i:" + i);
+					System.out.println("to:" + outer[i - 1]);
+					for (byte bbbb : bbb){
+						System.out.println(bbbb);
+					}
+					for (int ii = nodes.length * 8   + 4 +inner.length * 3; ii < b.length; ii++){
+						System.out.print(ii + ":" + b[ii] + ",");
+					}
+					
 					throw ee;
 				}
 				}
@@ -310,17 +425,46 @@ public abstract class Util {
 	                return Integer.compare(edge1[0], edge2[0]);
 	            }
 	        });
-		 int[] e = new int[edges.size() * 2];
-		 int i = 0;
-		 for(int[] edge: edges){
-			 e[i++] = edge[0];
-			 e[i++] = edge[1];
+		 
+		 int[][] ee = (int[][]) edges.toArray();
+		 int[] e = new int[ee.length * 2];
+		 
+		 for(int ii = 0; ii < e.length;){
+			 e[ii] = ee[ii/2][0];
+			 e[ii] = ee[ii/2][1];
 		 }
+		 System.out.println(Arrays.toString(e));
 		 return e;
 	}
 
 	public static boolean isInFirstTwoIndex(int i, int id) {
 		return (i == 0 && id < 2) || (i > 0 && id < blocks[i-1] + 2);
+	}
+	
+	public boolean BlockEq(HashMap<Integer, Node> n1, HashMap<Integer, Node> n2, HashMap<Integer, ArrayList<Edge>> i1,  HashMap<Integer, ArrayList<Edge>> i2,  HashMap<Integer, ArrayList<Edge>> o1,  HashMap<Integer, ArrayList<Edge>> o2){
+		for (Node n : n1.values())
+			if (!(n2.containsKey(n.id) && n2.get(n.id).equals(n)))
+				return false;
+		for (Node n : n2.values())
+			if (!(n1.containsKey(n.id) && n1.get(n.id).equals(n)))
+				return false;
+		for (ArrayList<Edge> ae : i1.values())
+			for (Edge e : ae)
+				if (!(i2.containsKey(e.to) && i2.get(e.to).contains(e)))
+					return false;
+		for (ArrayList<Edge> ae : i2.values())
+			for (Edge e : ae)
+				if (!(i1.containsKey(e.to) && i1.get(e.to).contains(e)))
+					return false;
+		for (ArrayList<Edge> ae : o1.values())
+			for (Edge e : ae)
+				if (!(o2.containsKey(e.to) && o2.get(e.to).contains(e)))
+					return false;
+		for (ArrayList<Edge> ae : o2.values())
+			for (Edge e : ae)
+				if (!(o2.containsKey(e.to) && o2.get(e.to).contains(e)))
+					return false;
+		return true;
 	}
 	
 	

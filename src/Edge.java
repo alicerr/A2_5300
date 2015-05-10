@@ -65,6 +65,7 @@ public class Edge {
 		this.to = to;
 		inBlock = false;
 		from.addBranch();
+		
 	}
 	/** String Representation of Edgelang.Object#toString()
 	 */
@@ -77,5 +78,9 @@ public class Edge {
 	 */
 	public Text toText(){
 		return new Text(toString());
+	}
+	public boolean equals (Edge e){
+		return e.to == to && e.from == from;
+		
 	}
 }

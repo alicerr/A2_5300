@@ -39,13 +39,7 @@ public class Node {
 			pr = Double.parseDouble(info[1]);
 		} 
 	}
-	/**
-	 * Increments Node PageRank value
-	 * @param inc value to increment by
-	 */
-	public void incrementPR(double inc){
-		this.pr += inc;
-	}
+
 	/**
 	 * Sets PageRank value
 	 * @param set PR value
@@ -103,6 +97,12 @@ public class Node {
 	 * @return numEdges
 	 */
 	public int edges(){ return this.edges; }
-	
+	public String debug(){
+		return "ID: " + id + " EDGES " + edges;
+	}
+	public void setEdges(int int1) {
+		edges = int1;
+		
+	}
 	
 }

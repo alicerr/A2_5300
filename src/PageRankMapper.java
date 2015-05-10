@@ -3,7 +3,6 @@
 import java.io.IOException;
 
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.Mapper;
 
 /**
  * Implements the subsequent Jobs map functionality for PageRankMain.java
@@ -26,7 +25,7 @@ public class PageRankMapper extends Mapper<LongWritable, Text, LongWritable, Tex
 		// If this node has no outgoing edges update sink
 		if (toList.length == 0 || (toList.length == 1 && toList[0].equals(""))){
 			context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).increment(
-					(long)(pr * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG + .5)
+					(long)(pr * CONST.SIG_FIG_FOR_TINY_DOUBLE_TO_LONG + .5)
 					);
 		} else { // Else Process toList, get nodeID for where the edge goes, and save it with PR value
 			for (String to : toList){

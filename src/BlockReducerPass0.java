@@ -1,9 +1,11 @@
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Reducer;
 
 
 /**
@@ -18,10 +20,19 @@ public class BlockReducerPass0 extends
 	 */
 	public void reduce(LongWritable key, Iterable<Text> vals, Context context){
 		
-		StringBuffer nodes = new StringBuffer();
-		StringBuffer innerEdges = new StringBuffer();
-		StringBuffer outerEdges = new StringBuffer();
-		HashSet<Integer> seenNodes = new HashSet<Integer>();
+		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
+		int max = Util.baseValue((byte) (key.get() + 1));
+		for (int i = Util.baseValue((byte) key.get()); i < max; i++){
+			Node n = new Node(i);
+			n.setPR(CONST.BASE_PAGE_RANK);
+			nodes.put(i, n);
+		}
+			
+		HashMap<Integer, ArrayList<Edge>> i = new HashMap<Integer, ArrayList<Edge>>();
+
+		HashMap<Integer, ArrayList<Edge>> o = new HashMap<Integer, ArrayList<Edge>>();
+		
+		
 		// Loops through all the values associated with the key
 		for (Text val : vals){
 			
@@ -29,46 +40,44 @@ public class BlockReducerPass0 extends
 			// to seenNodes and nodes appropriately
 			String[] info = val.toString().split(CONST.L0_DIV, -1);
 			byte marker = Byte.parseByte(info[0]);
-			if (marker == CONST.SEEN_NODE_MARKER){
-				int nodeID = Integer.parseInt(info[1]);
-				if (!seenNodes.contains(nodeID)){
-					nodes.append(CONST.L1_DIV + info[1] + CONST.L2_DIV + CONST.BASE_PAGE_RANK);
-					seenNodes.add(nodeID);
-				}
-			} else if (marker == CONST.SEEN_EDGE_MARKER){
+			if (marker == CONST.SEEN_EDGE_MARKER){
 				int from = Integer.parseInt(info[1]);
 				int to = Integer.parseInt(info[2]);
-				if (!seenNodes.contains(from)){
-					nodes.append(CONST.L1_DIV + from + CONST.L2_DIV + CONST.BASE_PAGE_RANK);
-					seenNodes.add(from);
-				}
+				nodes.get(from).addBranch();
 				// Specifies if we are currently looking at an internal edge or external edge for a block
 				if (Util.idToBlock(to) == key.get()){
-					innerEdges.append(CONST.L1_DIV + from + CONST.L2_DIV + to);
+					if (i.containsKey(to)){
+						i.get(to).add(new Edge(from, to));
+					} else {
+						ArrayList<Edge> ae = new ArrayList<Edge>();
+						ae.add(new Edge(from, to));
+						i.put(to,  ae);
+					}
 					
 				} else {
-					outerEdges.append(CONST.L1_DIV + from + CONST.L2_DIV + to);
+					if (o.containsKey(to)){
+						o.get(to).add(new Edge(from, to));
+					} else {
+						ArrayList<Edge> ae = new ArrayList<Edge>();
+						ae.add(new Edge(from, to));
+						o.put(to,  ae);
+					}
 				}
 				
 			}
-			// Keep track of how many nodes we see... more of a sanity check since we know how many there are.
-			context.getCounter(PageRankEnum.TOTAL_NODES).increment(1);
+			
 		}
 		// Add dividers as necessary for empty strings
-		if (nodes.length() == 0)
-			nodes.append(CONST.L1_DIV);
-		if (innerEdges.length() == 0)
-			innerEdges.append(CONST.L1_DIV);
-		if (outerEdges.length() == 0)
-			outerEdges.append(CONST.L1_DIV);
+		
+		
 		try {
 			// Write out block data for next job
-			context.write(key, new Text(Util.getBlockDataAsString(nodes, innerEdges, outerEdges)));
+			context.write(key, new BytesWritable(Util.blockToByteBuffer(nodes, i, o).array()));
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-			
+
 		 
 	}
 

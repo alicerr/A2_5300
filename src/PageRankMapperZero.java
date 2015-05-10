@@ -1,7 +1,6 @@
 import java.io.IOException;
 
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.Mapper;
 
 /**
 * Implements the first Job map functionality for PageRankMain.java
@@ -24,16 +23,17 @@ public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable,
 			LongWritable toInt = new LongWritable(Integer.parseInt(info[2]));
 			Text toText = new Text(info[2]);
 			Text nullTo = new Text("-1");
-			
+			int toBlock = Util.idToBlock((int) toInt.get());
+			int fromBlock = Util.idToBlock((int) fromInt.get());
 			// Check to see if we keep the edge based on netid
-			if (Util.retainEdgeByNodeID(select)){ // If we keep it, write edge out (from node, to node)
+			if (toBlock < 10 && fromBlock < 10 &&Util.retainEdgeByNodeID(select)){ // If we keep it, write edge out (from node, to node)
 				try {
 					context.write(fromInt, toText);
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			} else { // else keep node so we don't lose it, but have it point to null node
+			} else if (fromBlock < 10) { // else keep node so we don't lose it, but have it point to null node
 				try {
 					context.write(fromInt, nullTo);
 				} catch (IOException | InterruptedException e) {
@@ -42,7 +42,8 @@ public class PageRankMapperZero extends Mapper<LongWritable, Text, LongWritable,
 				}
 			}
 			try { // To ensure we don't lose a node, write out nodeTo with no edges 
-				context.write(toInt, nullTo);
+				if (toBlock < 10) 
+					context.write(toInt, nullTo);
 			} catch (IOException | InterruptedException e) {
 				System.out.println("error2");
 				e.printStackTrace();

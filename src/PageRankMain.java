@@ -1,76 +1,107 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map.Entry;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.*;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
-/** 
- * Main class for running Node PageRank
- * @author Alice, Spencer, Garth
- *
- */
+import org.apache.hadoop.io.*;
+
+
+
 public class PageRankMain {
-	/**
-	 * Main method for running PageRank
-	 * @param args input output
-	 * @throws Exception
-	 */
 	public static void main(String[] args) throws Exception {
-	    Configuration conf = new Configuration();
-	    
-	    // Set up job 0
-	    String outputFile = args[1] + " pass 0";
-	    
-	    Job job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
-	    job.setJarByClass(PageRankMain.class);
-	    FileInputFormat.setInputPaths(job, new Path(args[0]));
-	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-	    job.setMapperClass(PageRankMapperZero.class);
-	    job.setReducerClass(PageRankReducerZero.class);
-	    job.setOutputKeyClass(LongWritable.class);
-	    job.setOutputValueClass(Text.class);
-	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
-        job.setInputFormatClass(TextInputFormat.class);    
-        job.waitForCompletion(true);
-        long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
-        int round = 1;
-        // Run for 5 rounds as specified by assignment
-        while (round < 6){
-        	String inputFile = outputFile;
-        	outputFile = args[1] + " pass " + round;
-        	conf = new Configuration();
-        	conf.setLong("TOTAL_NODES", totalNodes);
-        	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
+		Context c = new Context();
+		PageRankMapperZero pmr = new PageRankMapperZero();
+		PageRankReducerZero prr = new PageRankReducerZero();
+		BufferedReader br = new BufferedReader(new FileReader("edges_no_spaces_3.txt"));
+		String line = br.readLine();
+		double sum = 0.;
+		int counter = 0;
+		for (Entry<LongWritable, Text> e : c.reduceData){
+			Text v = e.getValue();
+			HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
+			Util.fillMapsFromBlockString(v.toString().split(CONST.L0_DIV), nodes, null, null);
+			int p = 0;
+			for (Node n : nodes.values()){
 
-        	FileInputFormat.setInputPaths(job, new Path(inputFile));
-     	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
-     	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
-     	    job.setInputFormatClass(SequenceFileInputFormat.class);
-     	    job.setJarByClass(PageRankMain.class);
-     	    job.setMapperClass(PageRankMapper.class);
-     	    job.setReducerClass(PageRankReducer.class);
-     	    job.setOutputKeyClass(LongWritable.class);
-     	    job.setOutputValueClass(Text.class);
-            job.setJarByClass(PageRankMain.class);
-            
-            job.waitForCompletion(true);
-            // Calculate residual from counters
-            double residualSum = job.getCounters().findCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG;
+				sum += n.getPR();
+				counter++;
+				p++;
+			}
+		}
+		System.out.println("SUM: " + sum);
+		System.out.println("COUNT: " + counter + " of " + CONST.TOTAL_NODES);
+		while(line != null){
+			pmr.map(new LongWritable(0), new Text(line), c);
+			line = br.readLine();
+		}
+		br.close();
+		for (Entry<LongWritable, ArrayList<Text>> m : c.mapData.entrySet())
+			prr.reduce(m.getKey(), m.getValue(), c);
+		int round = 0;
+		while (round < 5){
+			PageRankMapper pmrN = new PageRankMapper();
+			PageRankReducer prrN = new PageRankReducer();
+			Context c2 = new Context();
+			c2.getCounter(PageRankEnum.TOTAL_NODES).setValue(c.getCounter(PageRankEnum.TOTAL_NODES).getValue());
+			c2.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).setValue(0);
+			for (Entry<LongWritable, Text> r : c.reduceData)
+				pmrN.map(r.getKey(), r.getValue(), c2);
+			
+			for (Entry<LongWritable, ArrayList<Text>> m : c2.mapData.entrySet())
+				prrN.reduce(m.getKey(), m.getValue(), c2);
+			c = c2;
+					round++;
+		System.out.println("sum: " + c.getCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG);
+		System.out.println(" avg " + c.getCounter(PageRankEnum.RESIDUAL_SUM).getValue()/(CONST.SIG_FIG_FOR_DOUBLE_TO_LONG * c.getCounter(PageRankEnum.TOTAL_NODES).getValue()));
+		System.out.println("0: " + c.reduceData.get(0).getKey().get() + " " + c.reduceData.get(0).getValue());
+			
+		}
+		sum = 0.;
+		counter = 0;
+		for (Entry<LongWritable, Text> e : c.reduceData){
+			Text v = e.getValue();
+			HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
+			double pr = Double.parseDouble(v.toString().split(CONST.L0_DIV, -1)[1]);
+			int p = 0;
+			sum += pr;
+			
+		}
+		System.out.println("SUM: " + sum);
+		System.out.println("COUNT: " + counter + " of " + CONST.TOTAL_NODES);
+		while (round < 50){
+			PageRankMapper pmrN = new PageRankMapper();
+			PageRankReducer prrN = new PageRankReducer();
+			Context c2 = new Context();
+			c2.getCounter(PageRankEnum.TOTAL_NODES).setValue(c.getCounter(PageRankEnum.TOTAL_NODES).getValue());
+			c2.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).setValue(0);
+			for (Entry<LongWritable, Text> r : c.reduceData)
+				pmrN.map(r.getKey(), r.getValue(), c2);
+			
+			for (Entry<LongWritable, ArrayList<Text>> m : c2.mapData.entrySet())
+				prrN.reduce(m.getKey(), m.getValue(), c2);
+			c = c2;
+					round++;
+					
+		System.out.println("sum: " + c.getCounter(PageRankEnum.RESIDUAL_SUM).getValue()/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG);
+		System.out.println(" avg " + c.getCounter(PageRankEnum.RESIDUAL_SUM).getValue()/(CONST.SIG_FIG_FOR_DOUBLE_TO_LONG * c.getCounter(PageRankEnum.TOTAL_NODES).getValue()));
 
-            // Output Job data
-            System.out.println("Round: " + round + 
-        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/totalNodes + "\n");
-            
-            round++;
-        	
-        }
-	   
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
-        
+			
+		}
+		sum = 0.;
+		counter = 0;
+		for (Entry<LongWritable, Text> e : c.reduceData){
+			Text v = e.getValue();
+			HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
+			double pr = Double.parseDouble(v.toString().split(CONST.L0_DIV, -1)[1]);
+			int p = 0;
+			sum += pr;
+			
+		}
+		
+		System.out.println("SUM: " + sum);
+		System.out.println("COUNT: " + counter + " of " + CONST.TOTAL_NODES);
+
+		
 	}
-
-        
 }

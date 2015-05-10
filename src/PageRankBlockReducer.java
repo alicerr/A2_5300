@@ -1,10 +1,11 @@
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Reducer;
 
 
 /**
@@ -13,79 +14,117 @@ import org.apache.hadoop.mapreduce.Reducer;
  *
  */
 public class PageRankBlockReducer extends
-		Reducer<LongWritable, Text, LongWritable, Text> {
+		Reducer<LongWritable, BytesWritable, LongWritable, BytesWritable> {
 
 
 		/** Overrites reduce
 		 * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
 		 */
-		public void reduce(LongWritable key, Iterable<Text> vals, Context context){
+		public void reduce(LongWritable key, Iterable<BytesWritable> vals, Context context){
 
 			// Sets up hashmaps for vals
 			HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 			HashMap<Integer, ArrayList<Edge>> innerEdges = new HashMap<Integer, ArrayList<Edge>>();
+			HashMap<Integer, ArrayList<Edge>> o = new HashMap<Integer, ArrayList<Edge>>();
 			HashMap<Integer, Double> outerEdges = new HashMap<Integer, Double>();
 			double inBlockSink = 0.;
 			String outerEdgesString = "";
 			String innerEdgesString = "";
-			
+			int counter = 0;
+			double totalIncoming = 0.;
 			// Get values passed into function
-			for (Text val : vals){
+			for (BytesWritable val : vals){
 				String[] info = val.toString().split(CONST.L0_DIV, -1);
-				byte marker = Byte.parseByte(info[CONST.MARKER_INDEX_L0]);
+				byte marker = val.getBytes()[0];
 				
 				// Block Data
 				if (marker == CONST.ENTIRE_BLOCK_DATA_MARKER){
-					inBlockSink = Util.fillMapsFromBlockString(info, nodes, innerEdges, null);
-					outerEdgesString = info[CONST.OUTER_EDGE_LIST];
-					innerEdgesString = info[CONST.INNER_EDGE_LIST];
+					inBlockSink = Util.fillBlockFromByteBuffer(ByteBuffer.wrap(val.getBytes()), nodes, innerEdges, o);
+					
 					
 				} 
 				// Incoming Edged Data
 				else if (marker == CONST.INCOMING_EDGE_MARKER){
-					OuterEdgeValue incoming = new OuterEdgeValue(info);
-					if (outerEdges.containsKey(incoming.to)){ // Check if we already know about this edge and add PR
-						outerEdges.put(incoming.to, outerEdges.get(incoming.to) + incoming.pr);
+					ByteBuffer b = ByteBuffer.wrap(val.getBytes());
+					b.get();
+					int to = b.getInt();
+					double pr = b.getDouble();
+					//System.out.println(to + "->" + pr);
+					totalIncoming += pr;
+					if (outerEdges.containsKey(to)){ // Check if we already know about this edge and add PR
+						outerEdges.put(to, outerEdges.get(to) + pr);
+						
 					} else {
-						outerEdges.put(incoming.to, incoming.pr);
+						outerEdges.put(to, pr);
 					}
+					counter++;
 				}
 			}
-			
+
+			//System.out.println("got " + counter + " edges");
+			//System.out.println(outerEdges);
 			// Get Data from counters for calculations
-			double outOfBlockSink = CONST.DAMPING_FACTOR*((context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue() + .5)/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG - inBlockSink);
-			double totalNodes = context.getConfiguration().getLong("TOTAL_NODES", 685230);
-			double basePageAddition = CONST.RANDOM_SURFER * CONST.BASE_PAGE_RANK + outOfBlockSink/totalNodes;
-			org.apache.hadoop.mapreduce.Counter innerBlockRounds = context.getCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
+			double sinkPerNode = context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue()/CONST.SIG_FIG_FOR_TINY_DOUBLE_TO_LONG/CONST.TOTAL_NODES;
+			
+			Counter innerBlockRounds = context.getCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
 			// Set up Maps for each pass of loop below
 			HashMap<Integer, Node> nodesLastPass = new HashMap<Integer, Node>();
 			HashMap<Integer, Node> nodesThisPass = new HashMap<Integer, Node>();
-			boolean converged = false;
-			double residualSum = 0.;
-			double newInBlockSink = 0.;
+
+			double residualSum = Double.MAX_VALUE;
 			
 			// Each node is put into nodesLastPass for first pass
 			for (Node n : nodes.values()){
 				nodesLastPass.put(n.id, new Node(n));
 			}
-			
+			double sum = 0;
+			for (Node n: nodesLastPass.values())
+				sum += n.getPR();
+			System.out.println(" " + key + " INNER SUM: " + sum);
 			// Run until converged in block
-			while (!converged){
-				double baseInBlockPageAddition = CONST.DAMPING_FACTOR * (inBlockSink/(double)totalNodes);
+			int round = 0;
+			double inBlockConstant = 1.;
+			double expectedSum = 0;
+			double nodesInBlock = nodes.size();
+			while (residualSum/(double)nodesInBlock > CONST.RESIDUAL_SUM_DELTA){
+				System.out.println("RESID: " + residualSum + " AVG: " + residualSum/nodes.size());
+				residualSum = 0.;
+				double newInBlockSink = 0;
+				double sumInPr = 0.;
 				// For each node from last pass
+				double newRedistSum = 0.;
+				double base_page_rank = CONST.BASE_PAGE_RANK;
 				for (Node n : nodesLastPass.values()){
 					
 					// Base PR
-					double pr = basePageAddition + baseInBlockPageAddition;
+					double pr = CONST.RANDOM_SURFER * base_page_rank + inBlockConstant * CONST.DAMPING_FACTOR * sinkPerNode;
 					
 					// Incoming PR added in
+					
+					
 					if (outerEdges.containsKey(n.id))
-						pr += CONST.DAMPING_FACTOR * outerEdges.get(n.id);
+						pr +=  CONST.DAMPING_FACTOR * outerEdges.get(n.id);
+					
 					
 					// In Block PR added int
-					if (innerEdges.containsKey(n.id))
-						for (Edge e : innerEdges.get(n.id))
-							pr += CONST.DAMPING_FACTOR * nodesLastPass.get(e.from).prOnEdge();
+					if (innerEdges.containsKey(n.id)){
+						ArrayList<Edge> ae = innerEdges.get(n.id);
+						for (Edge e : ae){
+							Node nn = nodesLastPass.get(e.from);
+							pr += CONST.DAMPING_FACTOR * inBlockConstant * nn.prOnEdge();
+							
+						}
+					}
+					if (o.containsKey(n.id)){
+						for (Edge e : o.get(n.id)){
+							newRedistSum += pr/(double)n.edges(); 
+						}
+					} else if (n.edges() == 0){
+						newInBlockSink += pr;
+					}
+					
+					
+
 					
 					// Calculate Residual
 					double residual = Math.abs((pr - n.getPR()))/pr;
@@ -95,27 +134,31 @@ public class PageRankBlockReducer extends
 					Node nPrime = new Node(n);
 					nPrime.setPR(pr);
 					nodesThisPass.put(nPrime.id, nPrime);
-					
-					// Check for sink
-					if (nPrime.edges() == 0)
-						newInBlockSink += pr;
+					sumInPr += pr;
+
 					
 					
 					
 				}
+				 sum = 0;
+				 round++;
+				for (Node nn: nodesThisPass.values())
+					sum += nn.getPR();
+				if (expectedSum == 0)
+					expectedSum = sum;
+				System.out.println(" " + key + " INNER SUM: " + sum);
+				
 				// Reset Holders for next round.
 				// nodesThisPass becomes lastPass
 				nodesLastPass = nodesThisPass;
 				// Reset NodesThisPass
 				nodesThisPass = new HashMap<Integer, Node>();
-				// Pass sink on
-				inBlockSink = newInBlockSink;
-				newInBlockSink = 0;
-				
+
+				inBlockConstant = (expectedSum - totalIncoming)/ (sinkPerNode * nodesInBlock + sumInPr - newRedistSum - newInBlockSink );
+				base_page_rank = inBlockConstant * (sinkPerNode * nodesInBlock + sumInPr - newRedistSum - newInBlockSink )/nodesInBlock;
 				// Check if we have converged
-				converged = residualSum < CONST.RESIDUAL_SUM_DELTA;
 				//System.out.println(key + " " + residualSum);
-				residualSum = 0;
+				
 				innerBlockRounds.increment(1);
 				
 			}
@@ -129,9 +172,9 @@ public class PageRankBlockReducer extends
 			context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long) (residualSumOuter * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG + .5));
 			
 			// Save updated Block data
-			String block = Util.getBlockDataAsString(nodesLastPass, innerEdgesString, outerEdgesString);
+			ByteBuffer block = Util.blockToByteBuffer(nodesLastPass, innerEdges, o);
 			try {
-				context.write(key, new Text(block));
+				context.write(key, new BytesWritable(block.array()));
 			} catch (IOException | InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -45,19 +45,17 @@ public class GaussMain {
         job.waitForCompletion(true);
         
         // Set up for looped jobs
-        long totalNodes = job.getCounters().findCounter(PageRankEnum.TOTAL_NODES).getValue();
         int round = 1;
-        double residualSum = 1;
+        double residualSum = Double.MAX_VALUE;
         String inputFile;
         
         // Continue to loop until residual sum is low enough using Block Mapper and Gauss Reducer
-        while (residualSum > CONST.RESIDUAL_SUM_DELTA){
-        	
+        while (residualSum/CONST.TOTAL_NODES*10 > CONST.RESIDUAL_SUM_DELTA){
+        
         	// Set up subsequent jobs
         	inputFile = outputFile;
         	outputFile = args[1] + " pass " + round;
         	conf = new Configuration();
-        	conf.setLong("TOTAL_NODES", totalNodes);
         	job = Job.getInstance(conf, "page rank " + args[1] + " pass 0");
         	FileInputFormat.setInputPaths(job, new Path(inputFile));
      	    FileOutputFormat.setOutputPath(job, new Path(outputFile));
@@ -80,8 +78,8 @@ public class GaussMain {
             // Output information
         	System.out.println("Round: " + round + 
         			" \nInner block rounds total: " + innerBlockRounds.getValue() + " avg " + innerBlockRounds.getValue()/68. +
-        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/totalNodes + "\n");
-        	residualSum = residualSum/(double)totalNodes;
+        			"\nResidual sum (across all nodes): " + residualSum + " avg: " + residualSum/CONST.TOTAL_NODES + "\n");
+        	
             round++;
         	
         }
@@ -90,7 +88,7 @@ public class GaussMain {
         inputFile = outputFile;
     	outputFile = args[1] + " pageRank output.txt";
     	conf = new Configuration();
-    	conf.setLong("TOTAL_NODES", totalNodes);
+    	conf.setLong("TOTAL_NODES", 685230);
     	job = Job.getInstance(conf, "page rank " + args[1] + " pass get final nodes");
     	FileInputFormat.setInputPaths(job, new Path(inputFile));
  	    FileOutputFormat.setOutputPath(job, new Path(outputFile));

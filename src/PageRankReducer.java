@@ -3,7 +3,6 @@
 import java.io.IOException;
 
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.Reducer;
 
 /**
 * Implements the subsequent Jobs reduce functionality for PageRankMain.java
@@ -16,8 +15,9 @@ public class PageRankReducer extends Reducer<LongWritable, Text, LongWritable, T
 	 */
 	public void reduce(LongWritable key, Iterable<Text> vals, Context context){
 		// Set up variables
-		double redistributeValue = context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue()/(context.getConfiguration().getLong("TOTAL_NODES", 685230) * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG);
-		double newPageRank = CONST.RANDOM_SURFER*CONST.BASE_PAGE_RANK + redistributeValue;
+		long sinks = context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue();
+		double redistributeValue = sinks/(CONST.TOTAL_NODES * CONST.SIG_FIG_FOR_TINY_DOUBLE_TO_LONG);
+		double newPageRank = CONST.RANDOM_SURFER*CONST.BASE_PAGE_RANK + CONST.DAMPING_FACTOR * redistributeValue;
 		double oldPageRank = 0.;
 		String toList = "";
 		

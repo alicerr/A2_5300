@@ -2,7 +2,6 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper;
 
 
 /**
@@ -27,29 +26,15 @@ public class BlockMapperPass0 extends
 			int toInt = Integer.parseInt(info[2]);
 			int fromBlock = Util.idToBlock(fromInt);
 			int toBlock = Util.idToBlock(toInt);
-			
-			if (Util.retainEdgeByNodeID(select)){ // If we should keep the edge (based on netid) 
+			if (fromBlock < 10 && toBlock < 10 && Util.retainEdgeByNodeID(select)){ // If we should keep the edge (based on netid) 
 				try {
 					context.write(new LongWritable(fromBlock), new Text(CONST.SEEN_EDGE_MARKER + CONST.L0_DIV + fromInt + CONST.L0_DIV + toInt));
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			} else { // Else we shouldn't keep the edge and we save it with no toInt
-				try {
-					context.write(new LongWritable(fromBlock), new Text(CONST.SEEN_NODE_MARKER + CONST.L0_DIV + fromInt));
-				} catch (IOException | InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-			}
-			try { // Write toBlock maps to with just a toInt. In case we don't see this node again (we don't want to lose a node)
-				context.write(new LongWritable(toBlock), new Text(CONST.SEEN_NODE_MARKER + CONST.L0_DIV + toInt));
-			} catch (IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			} 
+			
 		} catch (NumberFormatException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

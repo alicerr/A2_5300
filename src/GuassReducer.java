@@ -4,7 +4,6 @@ import java.util.HashMap;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Reducer;
 
 
 /**
@@ -16,9 +15,10 @@ import org.apache.hadoop.mapreduce.Reducer;
  */
 public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text>   {
 	/** Overrites reduce
+	 * @throws Exception 
 	 * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
 	 */
-	public void reduce(LongWritable key, Iterable<Text> vals, Context context){
+	public void reduce(LongWritable key, Iterable<Text> vals, Context context) throws Exception{
 
 		//information holders for vals
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
@@ -27,12 +27,13 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 		double inBlockSink = 0.;
 		String outerEdgesString = "";
 		String innerEdgesString = "";
-		
+		int count = 0;
+
 		//get values passed into function
 		for (Text val : vals){
 			String[] info = val.toString().split(CONST.L0_DIV, -1);
 			byte marker = Byte.parseByte(info[CONST.MARKER_INDEX_L0]);
-			
+			count++;
 			//block data
 			if (marker == CONST.ENTIRE_BLOCK_DATA_MARKER){
 				inBlockSink = Util.fillMapsFromBlockString(info, nodes, innerEdges, null);
@@ -50,13 +51,12 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 				}
 			}
 		}
-		
 		//general variables from counters and constants
-		double outOfBlockSink = CONST.DAMPING_FACTOR*((context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue() + .5)/CONST.SIG_FIG_FOR_DOUBLE_TO_LONG - inBlockSink);
-		double totalNodes = context.getConfiguration().getLong("TOTAL_NODES", 65230);
-		double basePageAddition = CONST.RANDOM_SURFER * CONST.BASE_PAGE_RANK + outOfBlockSink/totalNodes;
-		double oldInBlockSink = inBlockSink;
-		org.apache.hadoop.mapreduce.Counter innerBlockRounds = context.getCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
+		double outOfBlockSink = CONST.DAMPING_FACTOR*(context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).getValue()/CONST.SIG_FIG_FOR_TINY_DOUBLE_TO_LONG - inBlockSink);
+	
+		double basePageAddition = CONST.RANDOM_SURFER * CONST.BASE_PAGE_RANK + outOfBlockSink/CONST.TOTAL_NODES;
+
+		Counter innerBlockRounds = context.getCounter(PageRankEnum.INNER_BLOCK_ROUNDS);
 
 		//per round holders
 		HashMap<Integer, Node> nodesLastPass = new HashMap<Integer, Node>();
@@ -65,10 +65,11 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 		for (Node n : nodes.values()){
 			nodesLastPass.put(n.id, new Node(n));
 		}
-
+		
 		//run convergence
 		while (!converged){
-			double baseInBlockPageAddition = CONST.DAMPING_FACTOR * (inBlockSink/(double)totalNodes);
+			double baseInBlockPageAddition = CONST.DAMPING_FACTOR * (inBlockSink/CONST.TOTAL_NODES);
+			inBlockSink = 0.;
 			for (Node n : nodesLastPass.values()){
 				
 				//base pr
@@ -89,13 +90,14 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 				
 				//save value
 				Node nPrime = new Node(n);
-				nPrime.setPR(pr);
-				// Save it in same map, instead of a separate
-				nodesLastPass.put(nPrime.id, nPrime);
-				
+				nPrime.setPR(pr);				
 				//look for sink
 				if (nPrime.edges() == 0)
 					inBlockSink += pr - n.getPR();
+				// Save it in same map, instead of a separate
+				nodesLastPass.put(nPrime.id, nPrime);
+				
+
 				
 			}
 			
@@ -106,10 +108,10 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 			// the whole block.
 			
 			//check for convergence
-			converged = residualSum < CONST.RESIDUAL_SUM_DELTA;
+			converged = residualSum * 100/CONST.TOTAL_NODES < CONST.RESIDUAL_SUM_DELTA;
 			//System.out.println(key + " " + residualSum);
 			residualSum = 0;
-
+			
 			innerBlockRounds.increment(1);
 			
 			
@@ -121,16 +123,24 @@ public class GuassReducer extends Reducer<LongWritable, Text, LongWritable, Text
 			double residual = Math.abs((n.getPR() - nodes.get(n.id).getPR()))/n.getPR();
 			residualSumOuter += residual;
 		}
-		context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long) (residualSumOuter * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG));
-		context.getCounter(PageRankEnum.SINKS_TO_REDISTRIBUTE).increment((long) ((oldInBlockSink - inBlockSink)*CONST.SIG_FIG_FOR_DOUBLE_TO_LONG));
+		context.getCounter(PageRankEnum.RESIDUAL_SUM).increment((long) ((residualSumOuter * CONST.SIG_FIG_FOR_DOUBLE_TO_LONG) +.5));
 		//save updated block
 		String block = Util.getBlockDataAsString(nodesLastPass, innerEdgesString, outerEdgesString);
+		HashMap<Integer, Node> n2 = new HashMap<Integer, Node>();
+		Util.fillMapsFromBlockString(block.split(CONST.L0_DIV), nodesLastPass, null, null);
+		for (Node n : n2.values()){
+			if (!(nodesLastPass.containsKey(n.id) && nodesLastPass.get(n.id).equals(n)))
+				throw new Exception("transalt");
+		}
 		try {
 			context.write(key, new Text(block));
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		System.out.print("DEBUG out: ");
+		for (Node n : nodes.values())
+			System.out.print(n.debug());
 	}
 	
 

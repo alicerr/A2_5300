@@ -3,7 +3,6 @@ import java.util.HashMap;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper;
 
 
 /**
@@ -24,13 +23,11 @@ public void map(LongWritable keyin, Text val, Context context){
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		Util.fillMapsFromBlockString(info, nodes, null, null);
 
-		
-		double totalNodes = context.getConfiguration().getLong("TOTAL_NODES", 685230);
 		// Get data and write out for first two nodes in each block
 		for (Node n : nodes.values()){
 			if (Util.isInFirstTwoIndex((int) keyin.get(), n.id)){
 				try {
-					context.write(new LongWritable(n.id), new Text(n.getPR()/(CONST.BASE_PAGE_RANK*totalNodes) + ""));
+					context.write(new LongWritable(n.id), new Text(n.getPR()+ ""));
 				} catch (IOException | InterruptedException e) {
 					
 					e.printStackTrace();
